@@ -823,7 +823,10 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);dire
       <div class="pg" id="pg-kpi-tasks">
         <div class="dept-page-hdr">
           <div><div class="dept-page-title">مهام مؤشرات الدليل حج عام 1447</div></div>
-          <button class="btn-new" id="btnAddKpi" onclick="currentKpiId=null;document.getElementById('kpiFilesList')&&(document.getElementById('kpiFilesList').innerHTML='');document.getElementById('kpiFileName')&&(document.getElementById('kpiFileName').textContent='اضغط لرفع ملفات');['fKpiTitle','fKpiIndicator','fKpiDesc'].forEach(function(i){var el=document.getElementById(i);if(el)el.value=''});fillSelects();showModal('kpiTaskModal')" style="display:none"><i class="fas fa-plus"></i> إضافة مهمة مؤشر</button>
+          <div style="display:flex;gap:8px;align-items:center">
+          <button id="btnDownloadReportKpi" onclick="downloadKpiReport()" style="display:none;align-items:center;gap:7px;padding:9px 18px;background:linear-gradient(135deg,#1a2e1e,#00594F);color:#AE9674;border:1.5px solid #836543;border-radius:9px;font-family:Tajawal,sans-serif;font-weight:800;font-size:13px;cursor:pointer"><i class="fas fa-file-download"></i> تحميل تقرير المؤشرات PDF</button>
+          <button class="btn-new" id="btnAddKpi" onclick="currentKpiId=null;document.getElementById('kpiFilesList')&&(document.getElementById('kpiFilesList').innerHTML='');document.getElementById('kpiFileName')&&(document.getElementById('kpiFileName').textContent='اضغط لرفع ملفات');['fKpiTitle','fKpiIndicator','fKpiDesc'].forEach(function(i){var el=document.getElementById(i);if(el)el.value=''});fillSelects();showModal('kpiTaskModal');initHijriPicker('fKpiEnd');setHijriPicker('fKpiEnd','');initHijriPicker('fKpiStart');setHijriPicker('fKpiStart','')" style="display:none"><i class="fas fa-plus"></i> إضافة مهمة مؤشر</button>
+          </div>
         </div>
         <div class="cards-grid" id="kpiTasksGrid"></div>
       </div>
@@ -936,9 +939,9 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);dire
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:20px" id="akdStatCards"></div>
 
         <!-- شريط صحة المؤشرات -->
-        <div style="background:linear-gradient(135deg,#0f2744,#1a3a5c);border-radius:var(--r);padding:22px 28px;margin-bottom:20px;display:flex;align-items:center;gap:36px">
+        <div style="background:linear-gradient(135deg,#1a2e1e,#00594F);border-radius:var(--r);padding:22px 28px;margin-bottom:20px;display:flex;align-items:center;gap:36px">
           <div style="flex:1;display:flex;gap:36px;flex-wrap:wrap">
-            <div><div style="font-size:30px;font-weight:900;color:#1db954" id="akdPct">0%</div><div style="font-size:10.5px;color:rgba(255,255,255,.5)">نسبة الإنجاز الكلية</div></div>
+            <div><div style="font-size:26px;font-weight:900;color:#1db954" id="akdPct">0%</div><div style="font-size:10px;color:rgba(255,255,255,.5)">إنجاز كلي</div></div><div><div style="font-size:26px;font-weight:900;color:#AE9674" id="akdCurPct">0%</div><div style="font-size:10px;color:rgba(255,255,255,.5)">إنجاز الحالي *</div></div>
             <div><div style="font-size:30px;font-weight:900;color:#f59e0b" id="akdPending">0</div><div style="font-size:10.5px;color:rgba(255,255,255,.5)">لم تُسلَّم</div></div>
             <div><div style="font-size:30px;font-weight:900;color:#3b82f6" id="akdReview">0</div><div style="font-size:10.5px;color:rgba(255,255,255,.5)">قيد المراجعة</div></div>
             <div><div style="font-size:30px;font-weight:900;color:#ef4444" id="akdRej">0</div><div style="font-size:10.5px;color:rgba(255,255,255,.5)">مرفوضة</div></div>
@@ -961,7 +964,7 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);dire
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
           <div class="dcard">
             <div class="dcard-title"><i class="fas fa-chart-bar" style="color:var(--blue)"></i> مقارنة الإدارات — نسب الإنجاز</div>
-            <div style="height:230px;position:relative"><canvas id="akdDeptChart"></canvas></div>
+            <div id="akdDeptChartWrap" style="height:420px;position:relative"><canvas id="akdDeptChart"></canvas></div>
           </div>
           <div class="dcard">
             <div class="dcard-title"><i class="fas fa-chart-pie" style="color:var(--purple)"></i> توزيع المعايير</div>
@@ -980,7 +983,13 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);dire
           <div id="akdDeptBars"></div>
         </div>
 
-        <!-- صف 3: آخر التسليمات + المهام العاجلة -->
+        <!-- صف 3: الإدارات الأسوأ أداءً -->
+        <div class="dcard" style="margin-bottom:16px">
+          <div class="dcard-title"><i class="fas fa-exclamation-triangle" style="color:#dc2626"></i> الإدارات الأسوأ أداءً — مهام انتهت ولم تُسلَّم</div>
+          <div id="akdWorstDepts"></div>
+        </div>
+
+        <!-- صف 4: آخر التسليمات + المهام العاجلة -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="dcard">
             <div class="dcard-title"><i class="fas fa-clock" style="color:var(--warn)"></i> آخر التسليمات</div>
@@ -1122,8 +1131,8 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);dire
     </div>
     <div class="ig"><label>الإدارة</label><select id="fDept"></select></div>
     <div class="ig-row">
-      <div class="ig"><label>تاريخ البدء</label><input type="date" id="fStart"></div>
-      <div class="ig"><label>تاريخ الانتهاء</label><input type="date" id="fEnd"></div>
+      <div class="ig"><label>تاريخ البدء</label><input type="hidden" id="fStart"><div id="hp-fStart-placeholder"></div></div>
+      <div class="ig"><label>تاريخ الانتهاء</label><input type="hidden" id="fEnd"><div id="hp-fEnd-placeholder"></div></div>
     </div>
     <!-- جدولة المهمة -->
     <div style="background:#f8fafc;border-radius:var(--rs);padding:13px;margin-bottom:12px;border:1px solid var(--border)">
@@ -1253,7 +1262,7 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);dire
       <div class="ig"><label>الأولوية</label><select id="fKpiPriority"><option value="urgent">🔴 مستعجلة</option><option value="normal" selected>🟢 عادية</option><option value="low">🔵 غير مستعجلة</option></select></div>
     </div>
     <div class="ig"><label>عدد المحاولات المسموحة</label><input type="number" id="fKpiMaxSubmits" min="1" max="10" value="2" style="width:100px"></div>
-    <div class="ig"><label>تاريخ انتهاء التسليم</label><input type="date" id="fKpiEnd"></div>
+    <div class="ig"><label>تاريخ انتهاء التسليم</label><input type="hidden" id="fKpiEnd"><div id="hp-fKpiEnd-placeholder"></div></div>
     <div class="ig">
       <label>مرفقات (يمكن إضافة أكثر من ملف)</label>
       <div id="kpiEditFilesList" style="margin-bottom:6px"></div>
@@ -1849,7 +1858,7 @@ function taskCard(t,showDept,isUser){
     (t.desc?'<div style="font-size:12.5px;color:#e11d48;font-weight:500;line-height:1.5">'+t.desc+'</div>':'')+
     (t.required?'<div style="font-size:12px;color:var(--muted)"><b>المطلوب:</b> '+t.required+'</div>':'')+
     ((t.start||t.end)?'<div style="font-size:11px;color:#94a3b8;line-height:1.9">'+(t.start?'البدء: '+fmtDate(t.start)+'<br>':'')+(t.end?'الانتهاء: '+fmtDate(t.end):'')+'</div>':'')+
-    (t.end?(function(){
+    (t.end&&!['accepted','completed'].includes(t.status)?(function(){
       var days=daysUntil(t.end);
       if(days===null)return '';
       if(days<0) return '<div style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;background:#fef2f2;color:#dc2626;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700"><i class="fas fa-clock"></i>تجاوز الموعد بـ '+Math.abs(days)+' يوم</div>';
@@ -1858,6 +1867,7 @@ function taskCard(t,showDept,isUser){
       if(days<=7) return '<div style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;background:#eff6ff;color:#2563eb;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600"><i class="fas fa-clock"></i>متبقي '+days+' أيام</div>';
       return '<div style="display:inline-flex;align-items:center;gap:5px;margin-top:3px;background:#f1f5f9;color:#475569;padding:3px 9px;border-radius:20px;font-size:11px"><i class="fas fa-calendar"></i>الانتهاء بعد '+days+' يوم</div>';
     })():'') +
+    (['accepted','completed'].includes(t.status)?'<div style="margin-top:6px;background:linear-gradient(135deg,#dcfce7,#bbf7d0);border:2px solid #22c55e;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px"><i class="fas fa-check-circle" style="color:#16a34a;font-size:18px"></i><div><div style="font-size:12.5px;font-weight:800;color:#065f46">✅ تم القبول والتسليم</div>'+(t.approveTime?'<div style="font-size:10.5px;color:#16a34a">'+t.approveTime+'</div>':'')+'</div></div>':'') +
     (t.submitTime?'<div style="font-size:11px;background:#f0fdf4;color:#16a34a;padding:4px 8px;border-radius:6px"><i class="fas fa-paper-plane" style="margin-left:4px"></i>تم التسليم: '+t.submitTime+' <span style="opacity:.6">('+t.submitCount+'/2)</span></div>':'')+
     (t.approveTime?'<div style="font-size:11px;background:#f0fdf4;color:#065f46;padding:4px 8px;border-radius:6px"><i class="fas fa-thumbs-up" style="margin-left:4px"></i>تم القبول: '+t.approveTime+'</div>':'')+
     (t.rejectTime?'<div style="font-size:11px;background:#fef2f2;color:#dc2626;padding:4px 8px;border-radius:6px"><i class="fas fa-thumbs-down" style="margin-left:4px"></i>تم الرفض: '+t.rejectTime+'</div>':'')+
@@ -1895,8 +1905,8 @@ function openTaskModal(id){
     document.getElementById('fStatus').value=t.status;
     document.getElementById('fPriority').value=t.priority;
     document.getElementById('fDept').value=t.dept;
-    document.getElementById('fStart').value=t.start||'';
-    document.getElementById('fEnd').value=t.end||'';
+    setHijriPicker('fStart', t.start||'');
+    setHijriPicker('fEnd', t.end||'');
     const msEl=document.getElementById('fMaxSubmits');if(msEl)msEl.value=t.maxSubmits||2;
     // تحميل الملفات الحالية
     // قراءة كل الملفات من JSON
@@ -1910,7 +1920,8 @@ function openTaskModal(id){
   } else {
     editingFiles=[];
     renderEditFilesList('taskEditFilesList');
-    ['fTitle','fDesc','fRequired','fStart','fEnd','fSchedDate','fSchedTime'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+    ['fTitle','fDesc','fRequired','fSchedDate','fSchedTime'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+    setHijriPicker('fStart','');setHijriPicker('fEnd','');;
     document.getElementById('fStatus').value='review';
     document.getElementById('fPriority').value='normal';
     document.getElementById('fScheduleType').value='immediate';
@@ -1921,6 +1932,9 @@ function openTaskModal(id){
   }
   fillSelects();
   showModal('taskModal');
+  // init Hijri pickers (only once per page load)
+  initHijriPicker('fStart');
+  initHijriPicker('fEnd');
 }
 function editTask(id){openTaskModal(id);}
 
@@ -2695,7 +2709,7 @@ function renderKpiTasks(){
           const daysToOpen=days-20;
           html+='<div style="font-size:10.5px;background:#f1f5f9;color:#64748b;padding:4px 8px;border-radius:6px"><i class="fas fa-lock" style="margin-left:4px"></i>تفتح بعد <b>'+daysToOpen+'</b> يوم</div>';
           html+='<div style="font-size:10.5px;color:var(--muted)"><i class="fas fa-flag-checkered" style="margin-left:4px"></i>الانتهاء: '+endDisplay+'</div>';
-        } else if(days!==null&&days<0){
+        } else if(days!==null&&days<0&&!['accepted','completed'].includes(t.status)){
           html+='<div style="font-size:10.5px;background:#fef2f2;color:#dc2626;padding:4px 8px;border-radius:6px;font-weight:700"><i class="fas fa-exclamation-circle" style="margin-left:4px"></i>انتهت منذ <b>'+Math.abs(days)+'</b> يوم</div>';
           html+='<div style="font-size:10.5px;color:#dc2626"><i class="fas fa-flag-checkered" style="margin-left:4px"></i>كان الموعد: '+endDisplay+'</div>';
         } else if(days!==null&&days===0){
@@ -2714,7 +2728,8 @@ function renderKpiTasks(){
       }
       return html;
     })()+
-    '<div><span style="display:inline-flex;padding:4px 13px;border-radius:20px;font-size:12px;font-weight:600;'+(ss[t.status]||'background:#f1f5f9;color:#64748b')+'">'+SM[t.status]+'</span></div>'+
+    (['accepted','completed'].includes(t.status)?'<div style="margin:6px 0;background:linear-gradient(135deg,#dcfce7,#bbf7d0);border:2px solid #22c55e;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px"><i class="fas fa-check-circle" style="color:#16a34a;font-size:20px"></i><div><div style="font-size:13px;font-weight:800;color:#065f46">✅ تم القبول والتسليم</div>'+(t.approveTime?'<div style="font-size:10.5px;color:#16a34a">'+t.approveTime+'</div>':'')+'</div></div>':
+    '<div><span style="display:inline-flex;padding:4px 13px;border-radius:20px;font-size:12px;font-weight:600;'+(ss[t.status]||'background:#f1f5f9;color:#64748b')+'">'+SM[t.status]+'</span></div>')+
     (t.needSupport?'<div style="background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:4px"><i class="fas fa-hands-helping"></i> يحتاج دعم</div>':'')+
     (t.submitTime?'<div style="font-size:11px;background:#f0fdf4;color:#16a34a;padding:4px 8px;border-radius:6px"><i class="fas fa-check-circle" style="margin-left:4px"></i>تسليم: '+t.submitTime+' ('+t.submitCount+'/2)</div>':'')+
     (t.file?'<div style="font-size:11px;color:#2563eb"><i class="fas fa-paperclip" style="margin-left:4px"></i>'+t.file+'</div>':'')+
@@ -2959,7 +2974,7 @@ function editKpiTask(id){
   document.getElementById('fKpiPriority').value=t.priority;
   document.getElementById('fKpiStatus').value=t.status;
   if(document.getElementById('fKpiCriteria'))document.getElementById('fKpiCriteria').value=t.criteria||'';
-  if(document.getElementById('fKpiEnd'))document.getElementById('fKpiEnd').value=t.endDate||'';
+  if(document.getElementById('fKpiEnd'))setHijriPicker('fKpiEnd',t.endDate||'');
   // تحميل الملفات الحالية في editingFiles
   editingFiles=[];
   if(t.files&&t.files.length) editingFiles=[...t.files];
@@ -2983,6 +2998,10 @@ function editKpiTask(id){
   const kDeptEl=document.getElementById('fKpiDept');
   if(kDeptEl&&t.dept) kDeptEl.value=t.dept;
   showModal('kpiTaskModal');
+  initHijriPicker('fKpiEnd');
+  setHijriPicker('fKpiEnd',t.endDate||'');
+  initHijriPicker('fKpiStart');
+  setHijriPicker('fKpiStart',t.startDate||'');
 }
 
 // ══════════════════════════════════════════════
@@ -3257,17 +3276,52 @@ function updateStats(){
 function updateAchBars(){
   ['achBars','kpiAchBars'].forEach(cid=>{
     const el=document.getElementById(cid);if(!el)return;
-    const dn=[...new Set(tasks.map(t=>t.dept))].slice(0,8);
-    if(!dn.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">لا توجد بيانات بعد</div>';return;}
-    el.innerHTML=dn.map(d=>{
+    const taskDepts=[...new Set(tasks.map(t=>t.dept).filter(Boolean))];
+    const allDN=[...DEPTS.map(x=>x.name).filter(d=>taskDepts.includes(d)),...taskDepts.filter(d=>!DEPTS.find(x=>x.name===d))];
+    if(!allDN.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">لا توجد بيانات بعد</div>';return;}
+    const todayD=new Date(); todayD.setHours(23,59,59,0);
+    el.innerHTML=allDN.map(d=>{
       const dt=tasks.filter(t=>t.dept===d);
+      if(!dt.length) return '';
       const done=dt.filter(t=>['completed','accepted'].includes(t.status)).length;
       const rej=dt.filter(t=>t.status==='rejected').length;
-      const pct=dt.length?Math.round(done/dt.length*100):0;
-      const bc=pct>=70?'green':pct>=40?'yellow':'red';
+      const upcoming=dt.filter(t=>!['completed','accepted'].includes(t.status)&&(!t.endDate||new Date(t.endDate)>=todayD));
+      const dueTasks=dt.filter(t=>t.endDate&&new Date(t.endDate)<todayD);
+      const dueDone=dueTasks.filter(t=>['completed','accepted'].includes(t.status)).length;
+      const curPct=dueTasks.length?Math.round(dueDone/dueTasks.length*100):100;
+      const totPct=dt.length?Math.round(done/dt.length*100):0;
+      const curC=curPct>=70?'#16a34a':curPct>=40?'#f59e0b':'#ef4444';
+      const totC=totPct>=70?'#16a34a':totPct>=40?'#f59e0b':'#ef4444';
       const sn=d.replace('إدارة ','').replace('فريق ','');
-      return '<div class="ach-item"><div class="ach-hdr"><span class="ach-name" style="font-size:11.5px">'+sn+'</span><span class="ach-meta">✓'+done+' X'+rej+' '+dt.length+' مهمة</span></div>'+
-        '<div class="ach-bar-wrap"><div class="ach-bar '+bc+'" style="width:'+pct+'%">'+pct+'%</div></div></div>';
+      return '<div style="background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-right:3px solid '+curC+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+          '<span style="font-size:12px;font-weight:800;color:var(--primary)">'+sn+'</span>'+
+          '<span style="font-size:10.5px;color:var(--muted)">'+
+            '<span style="color:#16a34a;font-weight:700">✓'+done+'</span>'+
+            (upcoming.length?' <span style="color:#3b82f6">⏳'+upcoming.length+'</span>':'')+
+            (rej?' <span style="color:#ef4444">✗'+rej+'</span>':'')+
+            ' / '+dt.length+
+          '</span>'+
+        '</div>'+
+        '<div style="margin-bottom:6px">'+
+          '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">'+
+            '<span>📅 إنجاز الحالي</span>'+
+            '<span style="font-weight:700;color:'+curC+'">'+curPct+'%'+(dueTasks.length===0?' <small>(لا مواعيد منتهية)</small>':' ('+dueDone+'/'+dueTasks.length+')')+'</span>'+
+          '</div>'+
+          '<div style="background:#f1f5f9;border-radius:50px;height:7px;overflow:hidden">'+
+            '<div style="background:'+curC+';height:100%;width:'+curPct+'%;border-radius:50px"></div>'+
+          '</div>'+
+        '</div>'+
+        '<div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">'+
+            '<span>📊 الإجمالي</span>'+
+            '<span style="font-weight:700;color:'+totC+'">'+totPct+'%'+(upcoming.length?' — يتبقى '+upcoming.length:'')+'</span>'+
+          '</div>'+
+          '<div style="background:#f1f5f9;border-radius:50px;height:5px;overflow:hidden">'+
+            '<div style="background:'+totC+';height:100%;width:'+totPct+'%;border-radius:50px;opacity:.75"></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
     }).join('');
   });
 }
@@ -3377,10 +3431,11 @@ function downloadKpiReport(){
   var jT=kpiTasks.filter(function(t){return t.criteria==='جودة الخدمات';}),jD=jT.filter(function(t){return ['completed','accepted'].includes(t.status);}).length,jPct=jT.length?Math.round(jD/jT.length*100):0;
   var iT=kpiTasks.filter(function(t){return t.criteria==='الامتثال والالتزام';}),iD=iT.filter(function(t){return ['completed','accepted'].includes(t.status);}).length,iPct=iT.length?Math.round(iD/iT.length*100):0;
 
+  var todayRep=new Date(); todayRep.setHours(23,59,59,0);
   var dS={};
-  tasks.forEach(function(t){if(!t.dept)return;if(!dS[t.dept])dS[t.dept]={total:0,done:0,rev:0,rej:0};dS[t.dept].total++;if(['completed','accepted'].includes(t.status))dS[t.dept].done++;else if(t.status==='review'&&(t.submitCount||0)>0)dS[t.dept].rev++;else if(t.status==='rejected')dS[t.dept].rej++;});
+  tasks.forEach(function(t){if(!t.dept)return;if(!dS[t.dept])dS[t.dept]={total:0,done:0,rev:0,rej:0,dueDone:0,dueTotal:0,upcoming:0};dS[t.dept].total++;var isDue=t.endDate&&new Date(t.endDate+'T23:59:59')<todayRep;if(['completed','accepted'].includes(t.status)){dS[t.dept].done++;if(isDue)dS[t.dept].dueDone++;}else if(t.status==='review'&&(t.submitCount||0)>0){dS[t.dept].rev++;}else if(t.status==='rejected'){dS[t.dept].rej++;}if(isDue)dS[t.dept].dueTotal++;else if(!['completed','accepted'].includes(t.status))dS[t.dept].upcoming++;});
   var kS={};
-  kpiTasks.forEach(function(t){if(!t.dept)return;if(!kS[t.dept])kS[t.dept]={total:0,done:0,rev:0,rej:0};kS[t.dept].total++;if(['completed','accepted'].includes(t.status))kS[t.dept].done++;else if(t.status==='review'&&(t.submitCount||0)>0)kS[t.dept].rev++;else if(t.status==='rejected')kS[t.dept].rej++;});
+  kpiTasks.forEach(function(t){if(!t.dept)return;if(!kS[t.dept])kS[t.dept]={total:0,done:0,rev:0,rej:0,dueDone:0,dueTotal:0,upcoming:0};kS[t.dept].total++;var isDue=t.endDate&&new Date(t.endDate+'T23:59:59')<todayRep;if(['completed','accepted'].includes(t.status)){kS[t.dept].done++;if(isDue)kS[t.dept].dueDone++;}else if(t.status==='review'&&(t.submitCount||0)>0){kS[t.dept].rev++;}else if(t.status==='rejected'){kS[t.dept].rej++;}if(isDue)kS[t.dept].dueTotal++;else if(!['completed','accepted'].includes(t.status))kS[t.dept].upcoming++;});
 
   function pC(p){return p>=70?'#16a34a':p>=40?'#d97706':'#dc2626';}
   function circ(pct,color,sz){
@@ -3398,14 +3453,31 @@ function downloadKpiReport(){
     return '<span style="'+c+';padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700">'+lbl+'</span>';
   }
   function dRow(dept,s){
-    var p=s.total?Math.round(s.done/s.total*100):0;
-    return '<tr><td style="text-align:right;font-weight:600;padding:7px 10px;font-size:12px">'+dept+'</td>'
+    var curPct=s.dueTotal?Math.round(s.dueDone/s.dueTotal*100):100;
+    var totPct=s.total?Math.round(s.done/s.total*100):0;
+    var noExp=s.dueTotal===0;
+    return '<tr><td style="text-align:right;font-weight:700;padding:7px 10px;font-size:12px">'+dept+'</td>'
       +'<td>'+s.total+'</td><td style="color:#16a34a;font-weight:700">'+s.done+'</td>'
       +'<td style="color:#d97706">'+s.rev+'</td><td style="color:#dc2626">'+s.rej+'</td>'
-      +'<td><div style="display:flex;align-items:center;gap:6px">'
-      +'<div style="flex:1;background:#e2e8f0;border-radius:50px;height:7px;overflow:hidden">'
-      +'<div style="background:'+pC(p)+';height:100%;width:'+p+'%;border-radius:50px"></div></div>'
-      +'<span style="font-weight:800;color:'+pC(p)+';font-size:11px;min-width:32px">'+p+'%</span></div></td></tr>';
+      +'<td style="color:#3b82f6;font-size:11px">'+(s.upcoming||0)+'</td>'
+      +'<td>'
+        +'<div style="margin-bottom:4px">'
+          +'<div style="display:flex;align-items:center;gap:4px">'
+            +'<span style="font-size:9px;color:#64748b;min-width:28px">حالي</span>'
+            +'<div style="flex:1;background:#e2e8f0;border-radius:50px;height:7px;overflow:hidden">'
+              +'<div style="background:'+pC(curPct)+';height:100%;width:'+curPct+'%;border-radius:50px"></div></div>'
+            +'<span style="font-weight:800;color:'+pC(curPct)+';font-size:11px;min-width:36px">'+curPct+'%'+(noExp?' *':'')+'</span>'
+          +'</div>'
+        +'</div>'
+        +'<div>'
+          +'<div style="display:flex;align-items:center;gap:4px">'
+            +'<span style="font-size:9px;color:#64748b;min-width:28px">كلي</span>'
+            +'<div style="flex:1;background:#e2e8f0;border-radius:50px;height:5px;overflow:hidden">'
+              +'<div style="background:'+pC(totPct)+';height:100%;width:'+totPct+'%;border-radius:50px;opacity:.75"></div></div>'
+            +'<span style="font-weight:700;color:'+pC(totPct)+';font-size:11px;min-width:36px">'+totPct+'%</span>'
+          +'</div>'
+        +'</div>'
+      +'</td></tr>';
   }
   function kRow(t,i){
     var eh=t.endDate?getH(t.endDate):'—';
@@ -3420,17 +3492,54 @@ function downloadKpiReport(){
   }
 
   var dSRows='',kSRows='',kpiRows='';
-  Object.keys(dS).forEach(function(d){dSRows+=dRow(d,dS[d]);});
-  Object.keys(kS).forEach(function(d){kSRows+=dRow(d,kS[d]);});
-  kpiTasks.forEach(function(t,i){kpiRows+=kRow(t,i);});
+  // ترتيب الإدارات حسب DEPTS ثم أي إدارة إضافية
+  var allRepDepts=DEPTS.map(function(x){return x.name;}).filter(function(d){return dS[d];});
+  Object.keys(dS).forEach(function(d){if(!DEPTS.find(function(x){return x.name===d;}))allRepDepts.push(d);});
+  allRepDepts.forEach(function(d){if(dS[d])dSRows+=dRow(d,dS[d]);});
+  var allRepKDepts=DEPTS.map(function(x){return x.name;}).filter(function(d){return kS[d];});
+  Object.keys(kS).forEach(function(d){if(!DEPTS.find(function(x){return x.name===d;}))allRepKDepts.push(d);});
+  allRepKDepts.forEach(function(d){if(kS[d])kSRows+=dRow(d,kS[d]);});
+  var sortedKpiForReport=[...kpiTasks].sort(function(a,b){
+    if(!a.endDate&&!b.endDate)return 0;
+    if(!a.endDate)return 1;
+    if(!b.endDate)return -1;
+    return new Date(a.endDate)-new Date(b.endDate);
+  });
+  sortedKpiForReport.forEach(function(t,i){kpiRows+=kRow(t,i);});
+
+  // حساب الإدارات الأسوأ للتقرير
+  var todayWR=new Date(); todayWR.setHours(0,0,0,0);
+  var worstMap={};
+  kpiTasks.forEach(function(t){
+    if(!t.dept)return;
+    if(!worstMap[t.dept])worstMap[t.dept]={expired:0,total:0,names:[]};
+    worstMap[t.dept].total++;
+    var d=t.endDate?new Date(t.endDate+'T00:00:00'):null;
+    var isExp=d&&d<todayWR;
+    var isNotDone=!['accepted','completed'].includes(t.status)&&(t.submitCount||0)===0;
+    if(isExp&&isNotDone){worstMap[t.dept].expired++;worstMap[t.dept].names.push(t.title||'');}
+  });
+  var worstArr=Object.entries(worstMap).filter(function(e){return e[1].expired>0;})
+    .sort(function(a,b){return b[1].expired-a[1].expired;});
+  var worstRows=worstArr.map(function(e,i){
+    var d=e[0],v=e[1];
+    var pct=Math.round(v.expired/v.total*100);
+    var rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
+    var col=pct>=70?'#dc2626':pct>=40?'#ea580c':'#f59e0b';
+    return '<tr style="background:'+(i%2===0?'#fff5f5':'#fff')+'"><td>'+rank+'</td>'
+      +'<td style="text-align:right;font-weight:700">'+d+'</td>'
+      +'<td>'+v.total+'</td>'
+      +'<td style="color:#dc2626;font-weight:800">'+v.expired+'</td>'
+      +'<td style="color:'+col+';font-weight:800">'+pct+'%</td>'
+      +'<td style="text-align:right;font-size:10px;color:#64748b">'+v.names.slice(0,2).join(' • ')+(v.names.length>2?' (+'+( v.names.length-2)+')':'')+'</td>'
+      +'</tr>';
+  }).join('');
+
 
   var css='*{margin:0;padding:0;box-sizing:border-box}'
     +'body{font-family:Tajawal,Arial,sans-serif;background:#f4f6fa;color:#1e293b;direction:rtl;font-size:13px}'
-    +'@media print{body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    +'.no-print{display:none!important}'
-    +'.pg-break{page-break-before:always;padding-top:20px}'
-    +'@page{size:A4;margin:12mm}}'
-    +'.hdr{background:linear-gradient(135deg,#1a2e1e,#00594F);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #836543}'
+    +'@media print{body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none!important}.pg-break{page-break-before:always;padding-top:20px}@page{size:A4;margin:12mm}}'
+        +'.hdr{background:linear-gradient(135deg,#1a2e1e,#00594F);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #836543}'
     +'.body{padding:20px 32px}'
     +'.sec{font-size:15px;font-weight:800;color:#1a2e1e;border-right:5px solid #836543;padding:5px 12px;margin:22px 0 14px;background:rgba(131,101,67,.1);border-radius:0 6px 6px 0}'
     +'.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}'
@@ -3477,7 +3586,8 @@ function downloadKpiReport(){
       +'<div class="card" style="border-top:4px solid #836543"><div style="font-size:24px;font-weight:900;color:'+pC(aPct)+';margin-bottom:4px">'+aPct+'%</div><div style="font-size:10px;color:#64748b;font-weight:700">الإنجاز</div></div>'
     +'</div>'
     +'<div class="cbox"><div class="ct">أداء الإدارات — المهام العادية</div>'
-    +'<table><thead><tr><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>مكتملة</th><th>مراجعة</th><th>مرفوضة</th><th style="width:160px">نسبة الإنجاز</th></tr></thead><tbody>'+dSRows+'</tbody></table></div>'
+    +'<table><thead><tr><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>مكتملة</th><th>مراجعة</th><th>مرفوضة</th><th>متبقية</th><th style="width:180px">نسبة الإنجاز (حالي / كلي)</th></tr></thead><tbody>'+dSRows+'</tbody></table></div>'
+    +'<div style="font-size:10px;color:#64748b;padding:6px 10px;background:#f8fafc;border-radius:6px;margin-top:-10px;margin-bottom:14px">* نسبة الإنجاز الحالي = 100% تعني أنه لا توجد مهام انتهى موعدها بعد. المهام المتبقية لم يحن موعدها.</div>'
     +'<div style="page-break-before:always;padding-top:20px"></div>'
     +'<div class="sec">📊 مؤشرات الدليل — حج عام 1447</div>'
     +'<div class="cards">'
@@ -3507,11 +3617,16 @@ function downloadKpiReport(){
         +'</div></div></div>'
     +'</div>'
     +'<div class="cbox" style="margin-bottom:16px"><div class="ct">أداء الإدارات — مؤشرات الدليل</div>'
-    +'<table><thead><tr><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>مكتملة</th><th>مراجعة</th><th>مرفوضة</th><th style="width:160px">نسبة الإنجاز</th></tr></thead><tbody>'+kSRows+'</tbody></table></div>'
+    +'<table><thead><tr><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>مكتملة</th><th>مراجعة</th><th>مرفوضة</th><th>متبقية</th><th style="width:180px">نسبة الإنجاز (حالي / كلي)</th></tr></thead><tbody>'+kSRows+'</tbody></table></div>'
     +'<div style="page-break-before:always;padding-top:20px"></div>'
     +'<div class="sec">📋 تفاصيل مهام مؤشرات الدليل</div>'
     +'<table><thead><tr><th>#</th><th style="text-align:right;width:35%">عنوان المؤشر</th><th style="text-align:right">الإدارة</th><th>المعيار</th><th>الانتهاء</th><th>الحالة</th></tr></thead><tbody>'+kpiRows+'</tbody></table>'
     +'</div>'
+        +(worstArr.length?'<div style="page-break-before:always;padding-top:20px"></div>'
+      +'<div class="sec">🚨 الإدارات الأسوأ أداءً — مهام انتهت ولم تُسلَّم</div>'
+      +'<div style="font-size:11px;color:#64748b;background:#fff5f5;border-radius:8px;padding:8px 12px;margin-bottom:12px;border-right:4px solid #dc2626">هذه الإدارات لديها مهام انتهى موعدها دون أي تسليم — مرتبة من الأسوأ إلى الأفضل</div>'
+      +'<table><thead><tr><th>#</th><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>المتأخرة</th><th>نسبة التأخر</th><th style="text-align:right">أبرز المهام المتأخرة</th></tr></thead><tbody>'+worstRows+'</tbody></table>'
+      :'')
     +'<div class="foot"><b style="color:#AE9674">منصة قاصد</b><div>منصة قاصد لإدارة المهام</div><div>'+todayH+'</div></div>';
 
   var html='<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>تقرير قاصد</title>'
@@ -3540,6 +3655,8 @@ function setKpiDashFilter(f,btn){
 function renderAdminKpiDashboard(){
   const dlBtn=document.getElementById('btnDownloadReport');
   if(dlBtn)dlBtn.style.display=isAdminOnly()?'flex':'none';
+  const dlBtn2=document.getElementById('btnDownloadReportKpi');
+  if(dlBtn2)dlBtn2.style.display=isAdminOnly()?'inline-flex':'none';
   let list=kpiTasks;
   if(akdFilter!=='all') list=list.filter(t=>t.criteria===akdFilter);
 
@@ -3562,7 +3679,14 @@ function renderAdminKpiDashboard(){
     '<div class="sc" style="border-right:3px solid #f97316"><div class="sc-ico" style="background:#fff7ed;color:#f97316"><i class="fas fa-hands-helping"></i></div><div><div class="sc-val" style="color:#f97316">'+support+'</div><div class="sc-lbl">تحتاج دعم</div></div></div>';
 
   // صحة
+  // حساب الإنجاز الحالي (المهام التي انتهى موعدها فقط)
+  const todayKpi=new Date(); todayKpi.setHours(23,59,59,0);
+  const dueTot=list.filter(t=>t.endDate&&new Date(t.endDate)<todayKpi).length;
+  const dueDon=list.filter(t=>t.endDate&&new Date(t.endDate)<todayKpi&&['completed','accepted'].includes(t.status)).length;
+  const curPctKpi=dueTot?Math.round(dueDon/dueTot*100):100;
   document.getElementById('akdPct').textContent=pct+'%';
+  const curEl=document.getElementById('akdCurPct');
+  if(curEl)curEl.textContent=curPctKpi+'%'+(dueTot===0?' (لا مواعيد)':'');
   document.getElementById('akdPending').textContent=pending;
   document.getElementById('akdReview').textContent=rev;
   document.getElementById('akdRej').textContent=rej;
@@ -3575,19 +3699,43 @@ function renderAdminKpiDashboard(){
   if(hCtx){if(akdCharts.health)akdCharts.health.destroy();
     akdCharts.health=new Chart(hCtx,{type:'doughnut',data:{datasets:[{data:[score,100-score],backgroundColor:[score>=70?'#1db954':score>=40?'#f59e0b':'#ef4444','rgba(255,255,255,.12)'],borderWidth:0}]},options:{cutout:'75%',plugins:{legend:{display:false},tooltip:{enabled:false}},responsive:false}});}
 
-  // مقارنة الإدارات
-  const depts=[...new Set(list.map(t=>t.dept).filter(Boolean))];
-  const deptLabels=depts.map(d=>d.replace('إدارة ','').replace('فريق ','').substring(0,10));
-  const deptDone=depts.map(d=>list.filter(t=>t.dept===d&&['completed','accepted'].includes(t.status)).length);
-  const deptPending=depts.map(d=>list.filter(t=>t.dept===d&&t.status==='review'&&(t.submitCount||0)===0).length);
-  const deptRej=depts.map(d=>list.filter(t=>t.dept===d&&t.status==='rejected').length);
+  // مقارنة الإدارات — كل الإدارات + مؤشرَي الإنجاز
+  const todayChart=new Date(); todayChart.setHours(23,59,59,0);
+  const allChartDepts=[...DEPTS.map(x=>x.name).filter(d=>list.some(t=>t.dept===d)),
+    ...[...new Set(list.map(t=>t.dept).filter(Boolean))].filter(d=>!DEPTS.find(x=>x.name===d))];
+  const depts=allChartDepts;
+  // مؤشر الإنجاز الحالي (المهام التي حان موعدها)
+  const deptCurPct=depts.map(d=>{
+    const dt=list.filter(t=>t.dept===d);
+    const due=dt.filter(t=>t.endDate&&new Date(t.endDate)<todayChart);
+    const dueDone=due.filter(t=>['completed','accepted'].includes(t.status)).length;
+    return due.length?Math.round(dueDone/due.length*100):100;
+  });
+  // مؤشر الإنجاز الكلي
+  const deptTotPct=depts.map(d=>{
+    const dt=list.filter(t=>t.dept===d);
+    const done=dt.filter(t=>['completed','accepted'].includes(t.status)).length;
+    return dt.length?Math.round(done/dt.length*100):0;
+  });
+  const deptLabels=depts.map(d=>d.replace('إدارة ','').replace('فريق ',''));
   const dCtx=document.getElementById('akdDeptChart');
-  if(dCtx){if(akdCharts.dept)akdCharts.dept.destroy();
+  // ارتفاع ديناميكي حسب عدد الإدارات
+  if(dCtx){
+    const chartH=Math.max(260, depts.length*52);
+    const chartWrap=document.getElementById('akdDeptChartWrap')||dCtx.parentElement;
+    chartWrap.style.height=chartH+'px';
+    if(akdCharts.dept)akdCharts.dept.destroy();
     akdCharts.dept=new Chart(dCtx,{type:'bar',data:{labels:deptLabels,datasets:[
-      {label:'مقبولة',data:deptDone,backgroundColor:'rgba(34,197,94,.85)',borderRadius:4},
-      {label:'لم تُسلَّم',data:deptPending,backgroundColor:'rgba(245,158,11,.85)',borderRadius:4},
-      {label:'مرفوضة',data:deptRej,backgroundColor:'rgba(239,68,68,.85)',borderRadius:4}
-    ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Tajawal'},boxWidth:12}}},scales:{x:{grid:{color:'#f1f5f9'},ticks:{font:{family:'Tajawal'}}},y:{grid:{display:false},ticks:{font:{family:'Tajawal',size:11}}}}}});}
+      {label:'إنجاز الحالي (المهام الحالية)',data:deptCurPct,backgroundColor:'rgba(26,46,30,.85)',borderRadius:4},
+      {label:'إنجاز الكلي (من الإجمالي)',data:deptTotPct,backgroundColor:'rgba(131,101,67,.7)',borderRadius:4}
+    ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Tajawal',size:11},boxWidth:14,padding:12}}},
+      scales:{
+        x:{max:100,grid:{color:'#f1f5f9'},ticks:{font:{family:'Tajawal'},callback:v=>v+'%'}},
+        y:{grid:{display:false},ticks:{font:{family:'Tajawal',size:11},autoSkip:false}}
+      }
+    }});
+  }
 
   // توزيع المعايير
   const c1=list.filter(t=>t.criteria==='جودة الخدمات').length;
@@ -3597,38 +3745,158 @@ function renderAdminKpiDashboard(){
   if(cCtx){if(akdCharts.criteria)akdCharts.criteria.destroy();
     akdCharts.criteria=new Chart(cCtx,{type:'doughnut',data:{datasets:[{data:[c1,c2,c3],backgroundColor:['#7c3aed','#16a34a','#94a3b8'],borderWidth:0}]},options:{cutout:'55%',plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false}});}
 
-  // تفصيل الإدارات بالأشرطة
+  // تفصيل الإدارات بالأشرطة — كل الإدارات + مؤشرَين
   const barsEl=document.getElementById('akdDeptBars');
-  if(!depts.length){barsEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">لا توجد بيانات</div>';}
-  else{
-    barsEl.innerHTML=depts.map(d=>{
-      const dt=list.filter(t=>t.dept===d);
-      const dd=dt.filter(t=>['completed','accepted'].includes(t.status)).length;
-      const dr=dt.filter(t=>t.status==='rejected').length;
-      const dp=dt.filter(t=>t.status==='review'&&(t.submitCount||0)===0).length;
-      const dpct=dt.length?Math.round(dd/dt.length*100):0;
-      const bc=dpct>=70?'green':dpct>=40?'yellow':'red';
-      const dn=d.replace('إدارة ','').replace('فريق ','').substring(0,18);
-      return '<div class="ach-item" style="margin-bottom:14px">'+
-        '<div class="ach-hdr">'+
-          '<span class="ach-name" style="font-size:12.5px">'+dn+'</span>'+
-          '<span class="ach-meta">'+
-            '<span style="color:#16a34a;margin-left:8px">✓'+dd+'</span>'+
-            '<span style="color:#f59e0b;margin-left:8px">⏳'+dp+'</span>'+
-            '<span style="color:#ef4444;margin-left:8px">✗'+dr+'</span>'+
-            '<span style="color:var(--muted)"> / '+dt.length+'</span>'+
+  const today=new Date(); today.setHours(23,59,59,0);
+  // استخدم كل الإدارات من DEPTS + أي إدارة لديها مهام غير موجودة في القائمة
+  const extraDepts=depts.filter(d=>!DEPTS.find(x=>x.name===d));
+  const allDeptNames=[...DEPTS.map(x=>x.name),...extraDepts];
+
+  const deptItems=allDeptNames.map(d=>{
+    const dt=list.filter(t=>t.dept===d);
+    if(!dt.length) return null; // إدارة بلا مهام في هذا الفلتر — نتجاهلها
+
+    const dd=dt.filter(t=>['completed','accepted'].includes(t.status)).length;
+    const dr=dt.filter(t=>t.status==='rejected').length;
+
+    // المهام التي انتهى موعدها (expired = endDate < today, ولم تُنجز)
+    const expired=dt.filter(t=>t.endDate && new Date(t.endDate)<today && !['completed','accepted'].includes(t.status));
+    // المهام التي لم ينتهِ موعدها بعد ولم تُنجز
+    const upcoming=dt.filter(t=>!['completed','accepted'].includes(t.status) && (!t.endDate || new Date(t.endDate)>=today));
+
+    // مؤشر الإنجاز الحالي: من المهام التي حان موعدها (منجزة + منتهية المهلة)
+    const dueTasks=dt.filter(t=>t.endDate && new Date(t.endDate)<today);
+    const dueDone=dueTasks.filter(t=>['completed','accepted'].includes(t.status)).length;
+    const curPct=dueTasks.length?Math.round(dueDone/dueTasks.length*100):100; // لو لا يوجد مواعيد منتهية = 100%
+
+    // مؤشر الإنجاز الكلي: من الإجمالي
+    const totalPct=dt.length?Math.round(dd/dt.length*100):0;
+
+    const curColor=curPct>=70?'#16a34a':curPct>=40?'#f59e0b':'#ef4444';
+    const totColor=totalPct>=70?'#16a34a':totalPct>=40?'#f59e0b':'#ef4444';
+    const dn=d.replace('إدارة ','').replace('فريق ','');
+
+    return '<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-right:3px solid '+curColor+'">'+
+      // اسم الإدارة + إحصائيات مختصرة
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+        '<span style="font-size:13px;font-weight:800;color:var(--primary)">'+dn+'</span>'+
+        '<span style="font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center">'+
+          '<span style="color:#16a34a;font-weight:700">✓ '+dd+'</span>'+
+          (upcoming.length?'<span style="color:#3b82f6">⏳ '+upcoming.length+' متبقية</span>':'')+
+          (expired.length?'<span style="color:#ef4444">⌛ '+expired.length+' متأخرة</span>':'')+
+          (dr?'<span style="color:#ef4444">✗ '+dr+'</span>':'')+
+          '<span style="color:var(--muted)">/ '+dt.length+'</span>'+
+        '</span>'+
+      '</div>'+
+      // مؤشر الإنجاز الحالي (المهام التي حان موعدها)
+      '<div style="margin-bottom:8px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+          '<span style="font-size:10.5px;color:var(--muted);font-weight:600">📅 إنجاز المهام الحالية</span>'+
+          '<span style="font-size:11px;font-weight:800;color:'+curColor+'">'+curPct+'%'+
+            (dueTasks.length===0?'<span style="font-size:9px;color:#3b82f6;font-weight:500;margin-right:4px"> (لا توجد مواعيد منتهية)</span>':
+            ' <span style="font-size:9px;color:var(--muted);font-weight:500">('+dueDone+'/'+dueTasks.length+')</span>')+
           '</span>'+
         '</div>'+
-        '<div class="ach-bar-wrap"><div class="ach-bar '+bc+'" style="width:'+dpct+'%">'+dpct+'%</div></div>'+
-      '</div>';
-    }).join('');
+        '<div style="background:#f1f5f9;border-radius:50px;height:8px;overflow:hidden">'+
+          '<div style="background:'+curColor+';height:100%;width:'+curPct+'%;border-radius:50px;transition:width .4s"></div>'+
+        '</div>'+
+      '</div>'+
+      // مؤشر الإنجاز الكلي
+      '<div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+          '<span style="font-size:10.5px;color:var(--muted);font-weight:600">📊 الإنجاز من الإجمالي</span>'+
+          '<span style="font-size:11px;font-weight:800;color:'+totColor+'">'+totalPct+'%'+
+            ' <span style="font-size:9px;color:var(--muted);font-weight:500">('+dd+'/'+dt.length+')'+
+            (upcoming.length?' — يتبقى '+upcoming.length+' مهمة':'')+
+            '</span>'+
+          '</span>'+
+        '</div>'+
+        '<div style="background:#f1f5f9;border-radius:50px;height:6px;overflow:hidden">'+
+          '<div style="background:'+totColor+';height:100%;width:'+totalPct+'%;border-radius:50px;opacity:.7;transition:width .4s"></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).filter(Boolean);
+
+  barsEl.innerHTML=deptItems.length
+    ? deptItems.join('')
+    : '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">لا توجد بيانات</div>';
+
+  // الإدارات الأسوأ أداءً — مهام انتهت ولم تُسلَّم
+  const worstEl=document.getElementById('akdWorstDepts');
+  if(worstEl){
+    const todayW=new Date(); todayW.setHours(0,0,0,0);
+    // جمع بيانات كل إدارة: عدد المهام المتأخرة (انتهى موعدها + لم تُسلَّم/تُقبل)
+    const deptWorst={};
+    list.forEach(t=>{
+      if(!t.dept) return;
+      const d=t.endDate?new Date(t.endDate):null;
+      const isExpired=d&&d<todayW;
+      const isNotDone=!['accepted','completed'].includes(t.status)&&(t.submitCount||0)===0;
+      if(!deptWorst[t.dept]) deptWorst[t.dept]={expired:0,total:0,tasks:[]};
+      deptWorst[t.dept].total++;
+      if(isExpired&&isNotDone){
+        deptWorst[t.dept].expired++;
+        deptWorst[t.dept].tasks.push(t);
+      }
+    });
+    // فلتر الإدارات التي لديها مهام متأخرة فقط، ثم ترتيب من الأسوأ
+    const worstList=Object.entries(deptWorst)
+      .filter(([,v])=>v.expired>0)
+      .sort((a,b)=>b[1].expired-a[1].expired);
+
+    if(!worstList.length){
+      worstEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><i class="fas fa-trophy" style="color:#f59e0b;font-size:28px;display:block;margin-bottom:8px"></i>لا توجد إدارات لديها مهام متأخرة 🎉</div>';
+    } else {
+      const maxExp=worstList[0][1].expired;
+      worstEl.innerHTML='<div style="margin-bottom:10px;font-size:11.5px;color:var(--muted);padding:6px 10px;background:#fff5f5;border-radius:8px;border-right:3px solid #dc2626">'
+        +'<i class="fas fa-info-circle" style="margin-left:5px;color:#dc2626"></i>'
+        +'المهام المحتسبة هي التي <b>انتهى موعدها ولم تُسلَّم أصلاً</b> (لم يُضغط زر التسليم)'
+        +'</div>'
+        +worstList.map(([dept,v],i)=>{
+          const pct=Math.round(v.expired/v.total*100);
+          const barW=Math.round(v.expired/maxExp*100);
+          const dn=dept.replace('إدارة ','').replace('فريق ','');
+          const rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':'  '+(i+1)+'.';
+          const col=pct>=70?'#dc2626':pct>=40?'#ea580c':'#f59e0b';
+          return '<div style="padding:10px 12px;margin-bottom:8px;background:#fff;border-radius:10px;border:1px solid #fee2e2;box-shadow:0 1px 3px rgba(0,0,0,.05)">'
+            +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">'
+              +'<div style="display:flex;align-items:center;gap:8px">'
+                +'<span style="font-size:16px;width:28px;text-align:center">'+rank+'</span>'
+                +'<span style="font-size:12.5px;font-weight:800;color:var(--primary)">'+dn+'</span>'
+              +'</div>'
+              +'<div style="display:flex;align-items:center;gap:10px">'
+                +'<span style="background:#fef2f2;color:#dc2626;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">'+v.expired+' مهمة متأخرة</span>'
+                +'<span style="font-size:11px;color:var(--muted)">من '+v.total+' إجمالاً</span>'
+              +'</div>'
+            +'</div>'
+            +'<div style="display:flex;align-items:center;gap:8px">'
+              +'<div style="flex:1;background:#fef2f2;border-radius:50px;height:10px;overflow:hidden">'
+                +'<div style="background:linear-gradient(90deg,'+col+',#fca5a5);height:100%;width:'+barW+'%;border-radius:50px;transition:width .5s"></div>'
+              +'</div>'
+              +'<span style="font-size:12px;font-weight:800;color:'+col+';min-width:36px">'+pct+'%</span>'
+            +'</div>'
+            // عرض أسماء المهام المتأخرة
+            +'<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">'
+              +v.tasks.slice(0,4).map(t=>'<span style="font-size:10px;background:#fef9f9;border:1px solid #fecaca;color:#7f1d1d;padding:2px 8px;border-radius:20px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">⌛ '+(t.title||'').substring(0,30)+'</span>').join('')
+              +(v.tasks.length>4?'<span style="font-size:10px;color:#dc2626;font-weight:600">+'+( v.tasks.length-4)+' أخرى</span>':'')
+            +'</div>'
+            +'</div>';
+        }).join('');
+    }
   }
 
-  // آخر التسليمات
-  const submitted=list.filter(t=>(t.submitCount||0)>0).sort((a,b)=>(b.submitTime||'').localeCompare(a.submitTime||'')).slice(0,6);
+  // آخر التسليمات — المهام المرسلة قيد المراجعة مرتبة بأقرب موعد انتهاء
+  const todayRec=new Date(); todayRec.setHours(23,59,59,0);
+  const submitted=list.filter(t=>(t.submitCount||0)>0 && !['accepted','completed'].includes(t.status))
+    .sort((a,b)=>{
+      const da=a.endDate?new Date(a.endDate)-todayRec:Infinity;
+      const db=b.endDate?new Date(b.endDate)-todayRec:Infinity;
+      return da-db;
+    }).slice(0,8);
   const recEl=document.getElementById('akdRecentSubmits');
   const ss={review:'background:#fef9c3;color:#ca8a04',accepted:'background:#dcfce7;color:#16a34a',completed:'background:#d1fae5;color:#065f46',rejected:'background:#fee2e2;color:#dc2626'};
-  recEl.innerHTML=!submitted.length?'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">لا توجد تسليمات بعد</div>':
+  recEl.innerHTML=!submitted.length?'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px"><i class="fas fa-check-circle" style="color:#16a34a;font-size:24px;display:block;margin-bottom:6px"></i>لا توجد مهام قيد المراجعة</div>':
     submitted.map(t=>
       '<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">'+
       '<div style="flex:1;min-width:0">'+
@@ -3646,22 +3914,39 @@ function renderAdminKpiDashboard(){
       '</div>'
     ).join('');
 
-  // تحتاج انتباهاً
-  const urgent=list.filter(t=>t.status==='rejected'||t.needSupport||(t.priority==='urgent'&&(t.submitCount||0)===0));
+
   const urgEl=document.getElementById('akdUrgent');
+  const todayUrg=new Date(); todayUrg.setHours(0,0,0,0);
+  const urgent=list.filter(t=>{
+    if(['accepted','completed'].includes(t.status)) return false;
+    const days=daysUntil(t.endDate);
+    return t.status==='rejected' ||
+           t.needSupport ||
+           t.priority==='urgent' ||
+           (days!==null && days<0);
+  }).sort((a,b)=>{
+    const rank=t=>(t.status==='rejected'?0:t.needSupport?1:(daysUntil(t.endDate)||0)<0?2:3);
+    return rank(a)-rank(b);
+  });
   urgEl.innerHTML=!urgent.length?
     '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px"><i class="fas fa-check-circle" style="color:#16a34a;font-size:28px;display:block;margin-bottom:8px"></i>لا توجد مهام تحتاج انتباهاً</div>':
-    urgent.slice(0,6).map(t=>{
-      const tag=t.status==='rejected'?{bg:'#fef2f2',col:'#dc2626',icon:'times-circle',lbl:'مرفوضة'}:
-                t.needSupport?{bg:'#fef3c7',col:'#d97706',icon:'hands-helping',lbl:'تحتاج دعم'}:
-                {bg:'#fff7ed',col:'#ea580c',icon:'exclamation-circle',lbl:'مستعجلة ولم تُسلَّم'};
+    urgent.slice(0,8).map(t=>{
+      const days=daysUntil(t.endDate);
+      const isOverdue=days!==null&&days<0;
+      const tag=t.status==='rejected'
+        ?{bg:'#fef2f2',col:'#dc2626',icon:'times-circle',lbl:'مرفوضة'}
+        :t.needSupport
+          ?{bg:'#fef3c7',col:'#d97706',icon:'hands-helping',lbl:'تحتاج دعم'}
+          :isOverdue
+            ?{bg:'#fff1f2',col:'#be123c',icon:'exclamation-circle',lbl:'تجاوزت الموعد بـ'+Math.abs(days)+' يوم'}
+            :{bg:'#fff7ed',col:'#ea580c',icon:'fire',lbl:'مستعجلة'+(t.submitCount?'':' — لم تُسلَّم')};
       return '<div style="padding:9px 12px;margin-bottom:6px;background:'+tag.bg+';border-radius:8px;display:flex;align-items:center;gap:8px">'+
         '<i class="fas fa-'+tag.icon+'" style="color:'+tag.col+';font-size:14px;flex-shrink:0"></i>'+
         '<div style="flex:1;min-width:0">'+
           '<div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.title+'</div>'+
-          '<div style="font-size:10.5px;color:var(--muted)">'+t.dept+' — <span style="color:'+tag.col+'">'+tag.lbl+'</span></div>'+
+          '<div style="font-size:10.5px;color:var(--muted)">'+t.dept+' — <span style="color:'+tag.col+';font-weight:600">'+tag.lbl+'</span></div>'+
         '</div>'+
-        '<button class="cabt" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="viewKpiTask(\''+t.id+'\')">عرض</button>'+
+        '<button class="cabt" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="viewKpiTask(this.dataset.id)" data-id="'+t.id+'">عرض</button>'+
       '</div>';
     }).join('');
 }
@@ -3745,37 +4030,73 @@ function renderDeptDashboard(){
       options:{cutout:'60%',plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false}});
   }
 
-  // آخر المهام
+  // قائمة المهام التفصيلية
   const sStyle={review:'background:#fef9c3;color:#ca8a04',accepted:'background:#dcfce7;color:#16a34a',completed:'background:#d1fae5;color:#065f46',rejected:'background:#fee2e2;color:#dc2626',incomplete:'background:#fff7ed;color:#ea580c'};
   const recEl=document.getElementById('ddRecentKpi');
-  const recent=kList.slice(0,6);
-  recEl.innerHTML=!recent.length?'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">لا توجد مهام</div>':
-    recent.map(t=>
-      '<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">'+
-      '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.title+'</div>'+
-        '<div style="font-size:10.5px;color:var(--blue);margin-top:2px"><i class="fas fa-chart-line" style="margin-left:3px"></i>'+t.indicator+'</div>'+
-      '</div>'+
-      '<span style="display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;flex-shrink:0;'+(sStyle[t.status]||'background:#f1f5f9;color:#64748b')+'">'+SM[t.status]+'</span>'+
-      '</div>'
-    ).join('');
+  const todayDD=new Date(); todayDD.setHours(23,59,59,0);
+  // ترتيب: المرفوضة أولاً، ثم بالأقرب موعداً
+  const sortedKList=[...kList].sort((a,b)=>{
+    if(a.status==='rejected'&&b.status!=='rejected')return -1;
+    if(b.status==='rejected'&&a.status!=='rejected')return 1;
+    if(['accepted','completed'].includes(a.status)&&!['accepted','completed'].includes(b.status))return 1;
+    if(['accepted','completed'].includes(b.status)&&!['accepted','completed'].includes(a.status))return -1;
+    const da=a.endDate?new Date(a.endDate)-todayDD:Infinity;
+    const db=b.endDate?new Date(b.endDate)-todayDD:Infinity;
+    return da-db;
+  });
+  recEl.innerHTML=!sortedKList.length?'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">لا توجد مهام</div>':
+    sortedKList.map(t=>{
+      const isAccepted=['accepted','completed'].includes(t.status);
+      const days=daysUntil(t.endDate);
+      const isOverdue=!isAccepted&&days!==null&&days<0;
+      return '<div style="padding:9px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;'+(isAccepted?'background:#f0fdf4;border-radius:8px;margin-bottom:3px':isOverdue?'background:#fff5f5;border-radius:8px;margin-bottom:3px':'')+'">'+
+        (isAccepted?'<i class="fas fa-check-circle" style="color:#16a34a;font-size:16px;flex-shrink:0"></i>':
+         isOverdue?'<i class="fas fa-exclamation-circle" style="color:#dc2626;font-size:16px;flex-shrink:0"></i>':
+         '<i class="fas fa-chart-line" style="color:#3b82f6;font-size:14px;flex-shrink:0"></i>')+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:'+(isAccepted?'#065f46':isOverdue?'#dc2626':'var(--txt)')+'">'+t.title+'</div>'+
+          '<div style="font-size:10px;color:var(--muted);margin-top:1px">'+t.indicator+
+            (isAccepted&&t.approveTime?' • ✅ قُبل '+t.approveTime:'')+ 
+            (!isAccepted&&isOverdue?' • ⌛ متأخر '+Math.abs(days)+' يوم':'')+
+          '</div>'+
+        '</div>'+
+        '<span style="display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;flex-shrink:0;'+(sStyle[t.status]||'background:#f1f5f9;color:#64748b')+'">'+SM[t.status]+'</span>'+
+      '</div>';
+    }).join('');
 
-  // المهام التي تحتاج انتباهاً (مرفوضة أو لم تُسلَّم مستعجلة)
-  const urgEl=document.getElementById('ddUrgentKpi');
-  const urgent=kList.filter(t=>t.status==='rejected'||(t.status==='review'&&t.priority==='urgent'&&(t.submitCount||0)===0)||(t.needSupport));
-  urgEl.innerHTML=!urgent.length?
+
+  const urgEl2=document.getElementById('ddUrgentKpi');
+  const todayDDU=new Date(); todayDDU.setHours(0,0,0,0);
+  const urgent2=kList.filter(t=>{
+    if(['accepted','completed'].includes(t.status)) return false;
+    const days=daysUntil(t.endDate);
+    return t.status==='rejected' ||
+           t.needSupport ||
+           t.priority==='urgent' ||
+           (days!==null && days<0);
+  }).sort((a,b)=>{
+    const rank=t=>(t.status==='rejected'?0:t.needSupport?1:(daysUntil(t.endDate)||0)<0?2:3);
+    return rank(a)-rank(b);
+  });
+  urgEl2.innerHTML=!urgent2.length?
     '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px"><i class="fas fa-check-circle" style="color:#16a34a;font-size:28px;display:block;margin-bottom:8px"></i>لا توجد مهام تحتاج انتباهاً</div>':
-    urgent.slice(0,5).map(t=>{
-      const tag=t.status==='rejected'?{bg:'#fef2f2',col:'#dc2626',icon:'times-circle',lbl:'مرفوضة'}:
-                t.needSupport?{bg:'#fef3c7',col:'#d97706',icon:'hands-helping',lbl:'تحتاج دعم'}:
-                {bg:'#fff7ed',col:'#ea580c',icon:'exclamation-circle',lbl:'مستعجلة'};
+    urgent2.slice(0,6).map(t=>{
+      const days=daysUntil(t.endDate);
+      const isOverdue=days!==null&&days<0;
+      const tag=t.status==='rejected'
+        ?{bg:'#fef2f2',col:'#dc2626',icon:'times-circle',lbl:'مرفوضة'}
+        :t.needSupport
+          ?{bg:'#fef3c7',col:'#d97706',icon:'hands-helping',lbl:'تحتاج دعم'}
+          :isOverdue
+            ?{bg:'#fff1f2',col:'#be123c',icon:'exclamation-circle',lbl:'تجاوزت الموعد بـ'+Math.abs(days)+' يوم'}
+            :{bg:'#fff7ed',col:'#ea580c',icon:'fire',lbl:'مستعجلة'+(t.submitCount?'':' — لم تُسلَّم')};
       return '<div style="padding:10px 12px;margin-bottom:7px;background:'+tag.bg+';border-radius:8px;display:flex;align-items:center;gap:9px">'+
         '<i class="fas fa-'+tag.icon+'" style="color:'+tag.col+';font-size:15px;flex-shrink:0"></i>'+
         '<div style="flex:1;min-width:0">'+
           '<div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.title+'</div>'+
-          '<div style="font-size:10.5px;color:'+tag.col+'">'+tag.lbl+'</div>'+
+          '<div style="font-size:10.5px;color:'+tag.col+';font-weight:600">'+tag.lbl+'</div>'+
         '</div>'+
-        '<button class="cabt" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="viewKpiTask(\''+t.id+'\')">عرض</button>'+
+        '<button class="cabt" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="viewKpiTask(this.dataset.id)" data-id="'+t.id+'">عرض</button>'+
       '</div>';
     }).join('');
 }
@@ -4014,12 +4335,192 @@ function canSubmitKpi(t){
 }
 function fmtDate(d){
   if(!d)return'';
-  try{const dt=new Date(d);const m=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];return dt.getDate()+' '+m[dt.getMonth()]+' '+dt.getFullYear();}catch(e){return d;}
+  const h=toHijri(d);
+  if(h&&h!==d) return h;
+  try{const dt=new Date(d+'T00:00:00');const m=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];return dt.getDate()+' '+m[dt.getMonth()]+' '+dt.getFullYear();}catch(e){return d;}
 }
 function nowStamp(){
   const n=new Date();
   return n.getDate()+'/'+(n.getMonth()+1)+'/'+n.getFullYear()+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
+
+// ══════════════════════════════════════════
+// HIJRI DATE PICKER
+// ══════════════════════════════════════════
+const HP_MONTHS=[
+  {y:1447,m:1,d:'2025-07-27'},{y:1447,m:2,d:'2025-08-26'},
+  {y:1447,m:3,d:'2025-09-24'},{y:1447,m:4,d:'2025-10-23'},
+  {y:1447,m:5,d:'2025-11-22'},{y:1447,m:6,d:'2025-12-21'},
+  {y:1447,m:7,d:'2026-01-20'},{y:1447,m:8,d:'2026-01-19'},
+  {y:1447,m:9,d:'2026-02-18'},{y:1447,m:10,d:'2026-03-20'},
+  {y:1447,m:11,d:'2026-04-18'},{y:1447,m:12,d:'2026-05-18'},
+  {y:1448,m:1,d:'2026-06-17'},{y:1448,m:2,d:'2026-07-16'},
+  {y:1448,m:3,d:'2026-08-15'},{y:1448,m:4,d:'2026-09-13'},
+  {y:1448,m:5,d:'2026-10-13'},{y:1448,m:6,d:'2026-11-11'},
+  {y:1448,m:7,d:'2026-12-11'},{y:1448,m:8,d:'2027-01-09'},
+  {y:1448,m:9,d:'2027-02-08'},{y:1448,m:10,d:'2027-03-09'},
+  {y:1448,m:11,d:'2027-04-08'},{y:1448,m:12,d:'2027-05-07'},
+  {y:1449,m:1,d:'2027-06-06'},
+];
+const HP_MNAMES=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الثانية','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+
+// Convert Hijri y,m,d → Gregorian ISO
+function hijriToGreg(hy,hm,hd){
+  const entry=HP_MONTHS.find(e=>e.y===hy&&e.m===hm);
+  if(!entry) return '';
+  const start=new Date(entry.d+'T00:00:00');
+  start.setDate(start.getDate()+hd-1);
+  return start.toISOString().split('T')[0];
+}
+
+// Convert Gregorian ISO → {y,m,d} hijri
+function gregToHijri(iso){
+  if(!iso) return null;
+  const d=new Date(iso+'T00:00:00');
+  if(isNaN(d)) return null;
+  for(let i=0;i<HP_MONTHS.length-1;i++){
+    const s=new Date(HP_MONTHS[i].d+'T00:00:00');
+    const ns=new Date(HP_MONTHS[i+1].d+'T00:00:00');
+    if(d>=s&&d<ns){
+      return {y:HP_MONTHS[i].y,m:HP_MONTHS[i].m,d:Math.round((d-s)/86400000)+1};
+    }
+  }
+  return null;
+}
+
+// Get max days in a Hijri month
+function hijriMonthDays(hy,hm){
+  const idx=HP_MONTHS.findIndex(e=>e.y===hy&&e.m===hm);
+  if(idx<0||idx>=HP_MONTHS.length-1) return 30;
+  const s=new Date(HP_MONTHS[idx].d+'T00:00:00');
+  const ns=new Date(HP_MONTHS[idx+1].d+'T00:00:00');
+  return Math.round((ns-s)/86400000);
+}
+
+// Build the picker HTML and insert it
+function initHijriPicker(inputId,labelText){
+  const orig=document.getElementById(inputId);
+  if(!orig||orig._hp_init) return;
+  orig._hp_init=true;
+
+  // Get unique years from HP_MONTHS
+  const years=[...new Set(HP_MONTHS.map(e=>e.y))];
+
+  const wrap=document.createElement('div');
+  wrap.className='hp-wrap';
+  wrap.id='hp-'+inputId;
+
+  const display=document.createElement('div');
+  display.className='hp-display empty';
+  display.innerHTML='<span class="hp-txt">اختر تاريخاً هجرياً</span><i class="fas fa-calendar-alt" style="color:#94a3b8;font-size:12px"></i>';
+
+  const popup=document.createElement('div');
+  popup.className='hp-popup';
+  popup.innerHTML=
+    '<div class="hp-labels"><div class="hp-lbl">اليوم</div><div class="hp-lbl">الشهر</div><div class="hp-lbl">السنة</div></div>'+
+    '<div class="hp-row">'+
+      '<select class="hp-sel" id="hp-d-'+inputId+'">'+
+        Array.from({length:30},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')+
+      '</select>'+
+      '<select class="hp-sel" id="hp-m-'+inputId+'">'+
+        HP_MNAMES.map((n,i)=>'<option value="'+(i+1)+'">'+n+'</option>').join('')+
+      '</select>'+
+      '<select class="hp-sel" id="hp-y-'+inputId+'">'+
+        years.map(y=>'<option value="'+y+'">'+y+'هـ</option>').join('')+
+      '</select>'+
+    '</div>'+
+    '<div class="hp-actions">'+
+      '<button class="hp-btn clear" type="button">مسح</button>'+
+      '<button class="hp-btn confirm" type="button">تأكيد</button>'+
+    '</div>';
+
+  wrap.appendChild(display);
+  wrap.appendChild(popup);
+  orig.parentNode.insertBefore(wrap,orig);
+  wrap.appendChild(orig);
+  orig.style.display='none';
+
+  // Update day options based on month/year
+  function updateDays(){
+    const hy=parseInt(popup.querySelector('#hp-y-'+inputId).value);
+    const hm=parseInt(popup.querySelector('#hp-m-'+inputId).value);
+    const dSel=popup.querySelector('#hp-d-'+inputId);
+    const cur=parseInt(dSel.value)||1;
+    const max=hijriMonthDays(hy,hm);
+    dSel.innerHTML=Array.from({length:max},(_,i)=>'<option value="'+(i+1)+'"'+(i+1===cur?' selected':'')+'>'+(i+1)+'</option>').join('');
+  }
+
+  popup.querySelector('#hp-y-'+inputId).addEventListener('change',updateDays);
+  popup.querySelector('#hp-m-'+inputId).addEventListener('change',updateDays);
+
+  // Toggle popup
+  display.addEventListener('click',function(e){
+    e.stopPropagation();
+    // Close others
+    document.querySelectorAll('.hp-popup.open').forEach(p=>{if(p!==popup)p.classList.remove('open');});
+    popup.classList.toggle('open');
+  });
+
+  // Clear
+  popup.querySelector('.hp-btn.clear').addEventListener('click',function(){
+    orig.value='';
+    display.innerHTML='<span class="hp-txt">اختر تاريخاً هجرياً</span><i class="fas fa-calendar-alt" style="color:#94a3b8;font-size:12px"></i>';
+    display.className='hp-display empty';
+    popup.classList.remove('open');
+    orig.dispatchEvent(new Event('change'));
+  });
+
+  // Confirm
+  popup.querySelector('.hp-btn.confirm').addEventListener('click',function(){
+    const hy=parseInt(popup.querySelector('#hp-y-'+inputId).value);
+    const hm=parseInt(popup.querySelector('#hp-m-'+inputId).value);
+    const hd=parseInt(popup.querySelector('#hp-d-'+inputId).value);
+    const greg=hijriToGreg(hy,hm,hd);
+    if(greg){
+      orig.value=greg;
+      display.innerHTML='<span class="hp-txt">'+hd+' '+HP_MNAMES[hm-1]+' '+hy+'هـ</span><i class="fas fa-calendar-alt" style="color:var(--primary2);font-size:12px"></i>';
+      display.className='hp-display has-val';
+    }
+    popup.classList.remove('open');
+    orig.dispatchEvent(new Event('change'));
+  });
+
+  // Close on outside click
+  document.addEventListener('click',function(e){
+    if(!wrap.contains(e.target)) popup.classList.remove('open');
+  });
+}
+
+// Set picker value from existing Gregorian ISO
+function setHijriPicker(inputId, isoVal){
+  const orig=document.getElementById(inputId);
+  if(!orig) return;
+  const wrap=document.getElementById('hp-'+inputId);
+  if(!wrap){orig.value=isoVal||'';return;}
+  orig.value=isoVal||'';
+  const display=wrap.querySelector('.hp-display');
+  if(!isoVal){
+    display.innerHTML='<span class="hp-txt">اختر تاريخاً هجرياً</span><i class="fas fa-calendar-alt" style="color:#94a3b8;font-size:12px"></i>';
+    display.className='hp-display empty';
+    return;
+  }
+  const hj=gregToHijri(isoVal);
+  if(hj){
+    const popup=wrap.querySelector('.hp-popup');
+    popup.querySelector('#hp-y-'+inputId).value=hj.y;
+    popup.querySelector('#hp-m-'+inputId).value=hj.m;
+    // update days first
+    const max=hijriMonthDays(hj.y,hj.m);
+    const dSel=popup.querySelector('#hp-d-'+inputId);
+    dSel.innerHTML=Array.from({length:max},(_,i)=>'<option value="'+(i+1)+'"'+(i+1===hj.d?' selected':'')+'>'+(i+1)+'</option>').join('');
+    display.innerHTML='<span class="hp-txt">'+hj.d+' '+HP_MNAMES[hj.m-1]+' '+hj.y+'هـ</span><i class="fas fa-calendar-alt" style="color:var(--primary2);font-size:12px"></i>';
+    display.className='hp-display has-val';
+  } else {
+    display.innerHTML='<span class="hp-txt">'+isoVal+'</span><i class="fas fa-calendar-alt" style="color:#94a3b8;font-size:12px"></i>';
+    display.className='hp-display has-val';
+  }
+}
+
 </script>
 </body>
 </html>
