@@ -4454,6 +4454,7 @@ function initHijriPicker(inputId,labelText){
 
   // Auto-apply date on any change
   function applyDate(){
+    if(orig._hp_setting) return; // لا تُطبِّق أثناء setHijriPicker
     const hy=parseInt(popup.querySelector('#hp-y-'+inputId).value);
     const hm=parseInt(popup.querySelector('#hp-m-'+inputId).value);
     const hd=parseInt(popup.querySelector('#hp-d-'+inputId).value);
@@ -4508,12 +4509,14 @@ function setHijriPicker(inputId, isoVal){
   const hj=gregToHijri(isoVal);
   if(hj){
     const popup=wrap.querySelector('.hp-popup');
+    // ── مفتاح الإصلاح: وقف الاستماع أثناء البرمجة ──
+    orig._hp_setting=true;
     popup.querySelector('#hp-y-'+inputId).value=hj.y;
     popup.querySelector('#hp-m-'+inputId).value=hj.m;
-    // update days first
     const max=hijriMonthDays(hj.y,hj.m);
     const dSel=popup.querySelector('#hp-d-'+inputId);
     dSel.innerHTML=Array.from({length:max},(_,i)=>'<option value="'+(i+1)+'"'+(i+1===hj.d?' selected':'')+'>'+(i+1)+'</option>').join('');
+    orig._hp_setting=false;
     display.innerHTML='<span class="hp-txt">'+hj.d+' '+HP_MNAMES[hj.m-1]+' '+hj.y+'هـ</span><i class="fas fa-calendar-alt" style="color:var(--primary2);font-size:12px"></i>';
     display.className='hp-display has-val';
   } else {
