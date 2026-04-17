@@ -4431,7 +4431,6 @@ function initHijriPicker(inputId,labelText){
     '</div>'+
     '<div class="hp-actions">'+
       '<button class="hp-btn clear" type="button">مسح</button>'+
-      '<button class="hp-btn confirm" type="button">تأكيد</button>'+
     '</div>';
 
   wrap.appendChild(display);
@@ -4453,6 +4452,23 @@ function initHijriPicker(inputId,labelText){
   popup.querySelector('#hp-y-'+inputId).addEventListener('change',updateDays);
   popup.querySelector('#hp-m-'+inputId).addEventListener('change',updateDays);
 
+  // Auto-apply date on any change
+  function applyDate(){
+    const hy=parseInt(popup.querySelector('#hp-y-'+inputId).value);
+    const hm=parseInt(popup.querySelector('#hp-m-'+inputId).value);
+    const hd=parseInt(popup.querySelector('#hp-d-'+inputId).value);
+    const greg=hijriToGreg(hy,hm,hd);
+    if(greg){
+      orig.value=greg;
+      display.innerHTML='<span class="hp-txt">'+hd+' '+HP_MNAMES[hm-1]+' '+hy+'هـ</span><i class="fas fa-calendar-alt" style="color:var(--primary2);font-size:12px"></i>';
+      display.className='hp-display has-val';
+      orig.dispatchEvent(new Event('change'));
+    }
+  }
+  popup.querySelector('#hp-d-'+inputId).addEventListener('change',applyDate);
+  popup.querySelector('#hp-m-'+inputId).addEventListener('change',function(){updateDays();applyDate();});
+  popup.querySelector('#hp-y-'+inputId).addEventListener('change',function(){updateDays();applyDate();});
+
   // Toggle popup
   display.addEventListener('click',function(e){
     e.stopPropagation();
@@ -4466,21 +4482,6 @@ function initHijriPicker(inputId,labelText){
     orig.value='';
     display.innerHTML='<span class="hp-txt">اختر تاريخاً هجرياً</span><i class="fas fa-calendar-alt" style="color:#94a3b8;font-size:12px"></i>';
     display.className='hp-display empty';
-    popup.classList.remove('open');
-    orig.dispatchEvent(new Event('change'));
-  });
-
-  // Confirm
-  popup.querySelector('.hp-btn.confirm').addEventListener('click',function(){
-    const hy=parseInt(popup.querySelector('#hp-y-'+inputId).value);
-    const hm=parseInt(popup.querySelector('#hp-m-'+inputId).value);
-    const hd=parseInt(popup.querySelector('#hp-d-'+inputId).value);
-    const greg=hijriToGreg(hy,hm,hd);
-    if(greg){
-      orig.value=greg;
-      display.innerHTML='<span class="hp-txt">'+hd+' '+HP_MNAMES[hm-1]+' '+hy+'هـ</span><i class="fas fa-calendar-alt" style="color:var(--primary2);font-size:12px"></i>';
-      display.className='hp-display has-val';
-    }
     popup.classList.remove('open');
     orig.dispatchEvent(new Event('change'));
   });
