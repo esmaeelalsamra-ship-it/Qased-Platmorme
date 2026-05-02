@@ -1759,7 +1759,7 @@ function navigate(pg){
   if(pg==='tasks') renderAllCards('all');
   if(pg==='my-tasks') renderMyTasks('all');
   if(pg==='my-kpi') renderMyKpi();
-  if(pg==='dashboard'||pg==='kpi') loadKpiTasks().then(()=>{setTimeout(()=>{renderDashCharts();updateAchBars();updateAnnStats();renderWorstDepts('dashWorstDepts',kpiTasks);},80);});
+  if(pg==='dashboard'||pg==='kpi') loadKpiTasks().then(()=>{setTimeout(()=>{renderDashCharts();updateAchBars();updateAnnStats();renderWorstDepts('dashWorstDepts',kpiTasks,'endDate');},80);});
   if(pg==='announcements') renderAnn();
   if(pg==='chat') renderChat();
   if(pg==='kpi-tasks'){loadKpiTasks().then(()=>{renderKpiTasks();updateSideBadges();});}
@@ -3302,12 +3302,17 @@ function updateStats(){
 }
 
 function updateAchBars(){
-  // achBars = مهام عادية (tasks) — kpiAchBars = مهام المؤشرات (kpiTasks)
-  const sources={achBars:tasks, kpiAchBars:kpiTasks};
-  Object.entries(sources).forEach(([cid,srcTasks])=>{
+  // achBars = مهام عادية (tasks، حقل الموعد: t.end)
+  // kpiAchBars = مهام المؤشرات (kpiTasks، حقل الموعد: t.endDate)
+  const sources={
+    achBars:{list:tasks, dateField:'end'},
+    kpiAchBars:{list:kpiTasks, dateField:'endDate'}
+  };
+  Object.entries(sources).forEach(([cid,src])=>{
     const el=document.getElementById(cid);if(!el)return;
+    const srcTasks=src.list;
+    const df=src.dateField;
     const today=new Date(); today.setHours(0,0,0,0);
-    // كل الإدارات التي لديها مهام في هذا المصدر
     const taskDepts=[...new Set(srcTasks.map(t=>t.dept).filter(Boolean))];
     const allDN=[...DEPTS.map(x=>x.name).filter(d=>taskDepts.includes(d)),
                  ...taskDepts.filter(d=>!DEPTS.find(x=>x.name===d))];
@@ -3318,24 +3323,24 @@ function updateAchBars(){
     el.innerHTML=allDN.map(d=>{
       const dt=srcTasks.filter(t=>t.dept===d);
       if(!dt.length) return '';
-      const done  =dt.filter(t=>['completed','accepted'].includes(t.status)).length;
-      const rej   =dt.filter(t=>t.status==='rejected').length;
-      const overdue=dt.filter(t=>t.endDate&&new Date(t.endDate+'T00:00:00')<today&&!['completed','accepted'].includes(t.status)).length;
-      const upcoming=dt.filter(t=>!['completed','accepted'].includes(t.status)&&(!t.endDate||new Date(t.endDate+'T00:00:00')>=today)).length;
+      const done   =dt.filter(t=>['completed','accepted'].includes(t.status)).length;
+      const rej    =dt.filter(t=>t.status==='rejected').length;
+      const getDate=t=>t[df]?new Date(t[df]+'T00:00:00'):null;
+      const overdue=dt.filter(t=>{const d=getDate(t);return d&&d<today&&!['completed','accepted'].includes(t.status);}).length;
+      const upcoming=dt.filter(t=>{const d=getDate(t);return !['completed','accepted'].includes(t.status)&&(!d||d>=today);}).length;
       const dueBase=done+overdue;
-      const curPct =dueBase?Math.round(done/dueBase*100):(dt.length?0:100);
+      const curPct =dueBase?Math.round(done/dueBase*100):(done===0&&upcoming>0?100:0);
       const totPct =dt.length?Math.round(done/dt.length*100):0;
-      const curC=curPct>=70?'#16a34a':curPct>=40?'#f59e0b':'#ef4444';
+      const curC=dueBase===0?'#3b82f6':curPct>=70?'#16a34a':curPct>=40?'#f59e0b':'#ef4444';
       const totC=totPct>=70?'#16a34a':totPct>=40?'#f59e0b':'#ef4444';
       const sn=d.replace('إدارة ','').replace('فريق ','');
-      const overdueLabel=overdue?'<span style="color:#ef4444;font-weight:700"> ⌛'+overdue+' متأخرة</span>':'';
-      const upcomingLabel=upcoming?'<span style="color:#3b82f6"> ⏳'+upcoming+'</span>':'';
       return '<div style="background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-right:3px solid '+curC+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
           '<span style="font-size:12px;font-weight:800;color:var(--primary)">'+sn+'</span>'+
           '<span style="font-size:10.5px;color:var(--muted)">'+
             '<span style="color:#16a34a;font-weight:700">✓'+done+'</span>'+
-            upcomingLabel+overdueLabel+
+            (upcoming?' <span style="color:#3b82f6">⏳'+upcoming+'</span>':'')+
+            (overdue?' <span style="color:#ef4444;font-weight:700">⌛'+overdue+'</span>':'')+
             (rej?' <span style="color:#ef4444">✗'+rej+'</span>':'')+
             ' / '+dt.length+
           '</span>'+
@@ -3343,12 +3348,12 @@ function updateAchBars(){
         '<div style="margin-bottom:6px">'+
           '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">'+
             '<span>📅 إنجاز الحالي</span>'+
-            '<span style="font-weight:700;color:'+curC+'">'+curPct+'%'+
-            (dueBase===0?' <small style="color:#3b82f6">('+upcoming+' قيد التنفيذ)</small>':
-             ' <small>('+done+'✓'+(overdue?' '+overdue+'⌛':'')+')</small>')+'</span>'+
+            '<span style="font-weight:700;color:'+curC+'">'+
+            (dueBase===0?'<span style="color:#3b82f6">'+upcoming+' قيد التنفيذ</span>':curPct+'% ('+done+'✓'+(overdue?' '+overdue+'⌛':'')+')')+
+            '</span>'+
           '</div>'+
           '<div style="background:#f1f5f9;border-radius:50px;height:7px;overflow:hidden">'+
-            '<div style="background:'+curC+';height:100%;width:'+curPct+'%;border-radius:50px"></div>'+
+            '<div style="background:'+curC+';height:100%;width:'+(dueBase===0?100:curPct)+'%;border-radius:50px"></div>'+
           '</div>'+
         '</div>'+
         '<div>'+
@@ -3696,14 +3701,16 @@ function setKpiDashFilter(f,btn){
   renderAdminKpiDashboard();
 }
 
-function renderWorstDepts(elId, tasksList){
+function renderWorstDepts(elId, tasksList, dateField){
+  dateField=dateField||'endDate'; // kpiTasks=endDate, tasks=end
   const el=document.getElementById(elId);
   if(!el) return;
   const todayW=new Date(); todayW.setHours(0,0,0,0);
   const deptWorst={};
   tasksList.forEach(t=>{
     if(!t.dept) return;
-    const d=t.endDate?new Date(t.endDate+'T00:00:00'):null;
+    const dv=t[dateField];
+    const d=dv?new Date(dv+'T00:00:00'):null;
     const isExpired=d&&d<todayW;
     const isRejected=t.status==='rejected';
     const isNotDone=!['accepted','completed'].includes(t.status);
@@ -3713,10 +3720,9 @@ function renderWorstDepts(elId, tasksList){
       deptWorst[t.dept].expired++;
       deptWorst[t.dept].expiredTasks.push(t);
     }
-    if(isRejected){
+    if(isRejected&&!isExpired){
       deptWorst[t.dept].rejected++;
-      if(!deptWorst[t.dept].expiredTasks.includes(t))
-        deptWorst[t.dept].rejectedTasks.push(t);
+      deptWorst[t.dept].rejectedTasks.push(t);
     }
   });
   // ترتيب: مجموع المتأخرة + المرفوضة
@@ -3940,7 +3946,7 @@ function renderAdminKpiDashboard(){
     : '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">لا توجد بيانات</div>';
 
   // الإدارات الأسوأ أداءً
-  renderWorstDepts('akdWorstDepts', kpiTasks);
+  renderWorstDepts('akdWorstDepts', kpiTasks, 'endDate');
 
   // آخر التسليمات — المهام المرسلة قيد المراجعة مرتبة بأقرب موعد انتهاء
   const todayRec=new Date(); todayRec.setHours(23,59,59,0);
