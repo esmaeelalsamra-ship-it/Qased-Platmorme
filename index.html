@@ -1759,7 +1759,7 @@ function navigate(pg){
   if(pg==='tasks') renderAllCards('all');
   if(pg==='my-tasks') renderMyTasks('all');
   if(pg==='my-kpi') renderMyKpi();
-  if(pg==='dashboard'||pg==='kpi') setTimeout(()=>{renderDashCharts();updateAchBars();updateAnnStats();renderWorstDepts('dashWorstDepts',tasks);},80);
+  if(pg==='dashboard'||pg==='kpi') setTimeout(()=>{renderDashCharts();updateAchBars();updateAnnStats();loadKpiTasks().then(()=>renderWorstDepts('dashWorstDepts',kpiTasks));},80);
   if(pg==='announcements') renderAnn();
   if(pg==='chat') renderChat();
   if(pg==='kpi-tasks'){loadKpiTasks().then(()=>{renderKpiTasks();updateSideBadges();});}
@@ -3462,7 +3462,7 @@ function downloadKpiReport(){
   var jT=kpiTasks.filter(function(t){return t.criteria==='جودة الخدمات';}),jD=jT.filter(function(t){return ['completed','accepted'].includes(t.status);}).length,jPct=jT.length?Math.round(jD/jT.length*100):0;
   var iT=kpiTasks.filter(function(t){return t.criteria==='الامتثال والالتزام';}),iD=iT.filter(function(t){return ['completed','accepted'].includes(t.status);}).length,iPct=iT.length?Math.round(iD/iT.length*100):0;
 
-  var todayRep=new Date(); todayRep.setHours(23,59,59,0);
+  var todayRep=new Date(); todayRep.setHours(0,0,0,0);
   var dS={};
   tasks.forEach(function(t){if(!t.dept)return;if(!dS[t.dept])dS[t.dept]={total:0,done:0,rev:0,rej:0,overdue:0,upcoming:0};dS[t.dept].total++;var isDue=t.endDate&&new Date(t.endDate+'T00:00:00')<todayRep;var isDone=['completed','accepted'].includes(t.status);if(isDone){dS[t.dept].done++;}else if(t.status==='review'&&(t.submitCount||0)>0){dS[t.dept].rev++;}else if(t.status==='rejected'){dS[t.dept].rej++;}if(isDue&&!isDone)dS[t.dept].overdue++;else if(!isDone&&(!t.endDate||new Date(t.endDate+'T00:00:00')>=todayRep))dS[t.dept].upcoming++;});
   var kS={};
@@ -3478,13 +3478,9 @@ function downloadKpiReport(){
       +'<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-family="Tajawal,Arial" font-size="9" fill="#64748b">إنجاز</text>'
       +'</svg>';
   }
-  function badge(s,t){
-    // إذا كانت المهمة مقبولة من mapKpiTask تكون status=accepted
-    var status=s;
-    if(t&&['accepted','completed'].includes(t.status)) status=t.status;
-    else if(t&&t.status==='review'&&(t.submitCount||0)>0&&t.approved) status='accepted';
-    var c={review:'background:#fef9c3;color:#ca8a04',accepted:'background:#dcfce7;color:#16a34a',completed:'background:#d1fae5;color:#065f46',rejected:'background:#fee2e2;color:#dc2626'}[status]||'background:#f1f5f9;color:#64748b';
-    var lbl={review:'قيد المراجعة',accepted:'✅ مقبولة',rejected:'مرفوضة',completed:'✅ مكتملة',incomplete:'لم تُسلَّم'}[status]||status;
+  function badge(s){
+    var c={review:'background:#fef9c3;color:#ca8a04',accepted:'background:#dcfce7;color:#16a34a',completed:'background:#d1fae5;color:#065f46',rejected:'background:#fee2e2;color:#dc2626'}[s]||'background:#f1f5f9;color:#64748b';
+    var lbl={review:'قيد المراجعة',accepted:'✅ مقبولة',rejected:'✗ مرفوضة',completed:'✅ مكتملة',incomplete:'لم تُسلَّم'}[s]||s;
     return '<span style="'+c+';padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700">'+lbl+'</span>';
   }
   function dRow(dept,s){
@@ -3524,7 +3520,7 @@ function downloadKpiReport(){
       +'<td style="text-align:right;font-size:10px">'+dn+'</td>'
       +'<td style="font-size:10px">'+cr+'</td>'
       +'<td style="font-size:10px">'+eh+'</td>'
-      +'<td>'+badge(t.status,t)+'</td></tr>';
+      +'<td>'+badge(t.status)+'</td></tr>';
   }
 
   var dSRows='',kSRows='',kpiRows='';
