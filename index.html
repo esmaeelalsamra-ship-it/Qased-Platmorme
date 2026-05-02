@@ -3471,9 +3471,13 @@ function downloadKpiReport(){
       +'<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-family="Tajawal,Arial" font-size="9" fill="#64748b">إنجاز</text>'
       +'</svg>';
   }
-  function badge(s){
-    var c={review:'background:#fef9c3;color:#ca8a04',accepted:'background:#dcfce7;color:#16a34a',completed:'background:#d1fae5;color:#065f46',rejected:'background:#fee2e2;color:#dc2626'}[s]||'background:#f1f5f9;color:#64748b';
-    var lbl={review:'قيد المراجعة',accepted:'مقبولة',rejected:'مرفوضة',completed:'مكتملة'}[s]||s;
+  function badge(s,t){
+    // إذا كانت المهمة مقبولة من mapKpiTask تكون status=accepted
+    var status=s;
+    if(t&&['accepted','completed'].includes(t.status)) status=t.status;
+    else if(t&&t.status==='review'&&(t.submitCount||0)>0&&t.approved) status='accepted';
+    var c={review:'background:#fef9c3;color:#ca8a04',accepted:'background:#dcfce7;color:#16a34a',completed:'background:#d1fae5;color:#065f46',rejected:'background:#fee2e2;color:#dc2626'}[status]||'background:#f1f5f9;color:#64748b';
+    var lbl={review:'قيد المراجعة',accepted:'✅ مقبولة',rejected:'مرفوضة',completed:'✅ مكتملة',incomplete:'لم تُسلَّم'}[status]||status;
     return '<span style="'+c+';padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700">'+lbl+'</span>';
   }
   function dRow(dept,s){
@@ -3512,7 +3516,7 @@ function downloadKpiReport(){
       +'<td style="text-align:right;font-size:10px">'+dn+'</td>'
       +'<td style="font-size:10px">'+cr+'</td>'
       +'<td style="font-size:10px">'+eh+'</td>'
-      +'<td>'+badge(t.status)+'</td></tr>';
+      +'<td>'+badge(t.status,t)+'</td></tr>';
   }
 
   var dSRows='',kSRows='',kpiRows='';
@@ -3540,7 +3544,7 @@ function downloadKpiReport(){
     worstMap[t.dept].total++;
     var d=t.endDate?new Date(t.endDate+'T00:00:00'):null;
     var isExp=d&&d<todayWR;
-    var isNotDone=!['accepted','completed'].includes(t.status)&&(t.submitCount||0)===0;
+    var isNotDone=!['accepted','completed'].includes(t.status);
     if(isExp&&isNotDone){worstMap[t.dept].expired++;worstMap[t.dept].names.push(t.title||'');}
   });
   var worstArr=Object.entries(worstMap).filter(function(e){return e[1].expired>0;})
@@ -3850,13 +3854,14 @@ function renderAdminKpiDashboard(){
   const worstEl=document.getElementById('akdWorstDepts');
   if(worstEl){
     const todayW=new Date(); todayW.setHours(0,0,0,0);
-    // جمع بيانات كل إدارة: عدد المهام المتأخرة (انتهى موعدها + لم تُسلَّم/تُقبل)
+    // استخدام كل مهام المؤشرات بغض النظر عن الفلتر المختار
     const deptWorst={};
-    list.forEach(t=>{
+    kpiTasks.forEach(t=>{
       if(!t.dept) return;
-      const d=t.endDate?new Date(t.endDate):null;
+      const d=t.endDate?new Date(t.endDate+'T00:00:00'):null;
       const isExpired=d&&d<todayW;
-      const isNotDone=!['accepted','completed'].includes(t.status)&&(t.submitCount||0)===0;
+      // متأخرة = انتهى الموعد + لم تُقبل بعد (سواء سُلِّمت أو لا)
+      const isNotDone=!['accepted','completed'].includes(t.status);
       if(!deptWorst[t.dept]) deptWorst[t.dept]={expired:0,total:0,tasks:[]};
       deptWorst[t.dept].total++;
       if(isExpired&&isNotDone){
