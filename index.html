@@ -3702,75 +3702,86 @@ function setKpiDashFilter(f,btn){
 }
 
 function renderWorstDepts(elId, tasksList, dateField){
-  dateField=dateField||'endDate'; // kpiTasks=endDate, tasks=end
-  const el=document.getElementById(elId);
-  if(!el) return;
-  const todayW=new Date(); todayW.setHours(0,0,0,0);
-  const deptWorst={};
+  dateField = dateField || 'endDate';
+  const el = document.getElementById(elId);
+  if(!el){ console.warn('renderWorstDepts: element not found:', elId); return; }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  console.log('renderWorstDepts called:', elId, 'tasks:', tasksList.length, 'today:', today.toISOString(), 'dateField:', dateField);
+
+  const deptWorst = {};
   tasksList.forEach(t=>{
     if(!t.dept) return;
-    const dv=t[dateField];
-    const d=dv?new Date(dv+'T00:00:00'):null;
-    const isExpired=d&&d<todayW;
-    const isRejected=t.status==='rejected';
-    const isNotDone=!['accepted','completed'].includes(t.status);
-    if(!deptWorst[t.dept]) deptWorst[t.dept]={expired:0,rejected:0,total:0,expiredTasks:[],rejectedTasks:[]};
+    const dv = t[dateField];
+    const d  = dv ? new Date(dv + 'T00:00:00') : null;
+    const isExpired  = d && d < today;
+    const isRejected = t.status === 'rejected';
+    const isNotDone  = !['accepted','completed'].includes(t.status);
+    if(!deptWorst[t.dept]) deptWorst[t.dept] = {expired:0, rejected:0, total:0, tasks:[]};
     deptWorst[t.dept].total++;
-    if(isExpired&&isNotDone){
+    if(isExpired && isNotDone){
       deptWorst[t.dept].expired++;
-      deptWorst[t.dept].expiredTasks.push(t);
-    }
-    if(isRejected&&!isExpired){
+      deptWorst[t.dept].tasks.push({title:t.title||'', reason:'⌛متأخرة', status:t.status});
+    } else if(isRejected){
       deptWorst[t.dept].rejected++;
-      deptWorst[t.dept].rejectedTasks.push(t);
+      deptWorst[t.dept].tasks.push({title:t.title||'', reason:'✗مرفوضة', status:t.status});
     }
   });
-  // ترتيب: مجموع المتأخرة + المرفوضة
-  const worstList=Object.entries(deptWorst)
-    .filter(([,v])=>v.expired>0||v.rejected>0)
-    .sort((a,b)=>(b[1].expired+b[1].rejected)-(a[1].expired+a[1].rejected));
+
+  console.log('deptWorst results:', JSON.stringify(Object.fromEntries(
+    Object.entries(deptWorst).map(([d,v])=>[d,{expired:v.expired,rejected:v.rejected,total:v.total}])
+  )));
+
+  const worstList = Object.entries(deptWorst)
+    .filter(([,v]) => v.expired > 0 || v.rejected > 0)
+    .sort((a,b) => (b[1].expired + b[1].rejected) - (a[1].expired + a[1].rejected));
+
+  console.log('worstList length:', worstList.length);
 
   if(!worstList.length){
-    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><i class="fas fa-trophy" style="color:#f59e0b;font-size:28px;display:block;margin-bottom:8px"></i>لا توجد إدارات متأخرة أو مرفوضة 🎉</div>';
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b;font-size:13px">' +
+      '<i class="fas fa-trophy" style="color:#f59e0b;font-size:28px;display:block;margin-bottom:8px"></i>' +
+      'لا توجد إدارات متأخرة أو مرفوضة 🎉</div>';
     return;
   }
-  const maxScore=worstList[0][1].expired+worstList[0][1].rejected;
-  el.innerHTML=worstList.map(([dept,v],i)=>{
-    const score=v.expired+v.rejected;
-    const pct=Math.round(score/v.total*100);
-    const barW=Math.round(score/maxScore*100);
-    const dn=dept.replace('إدارة ','').replace('فريق ','');
-    const rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
-    const col=pct>=70?'#dc2626':pct>=40?'#ea580c':'#f59e0b';
-    const allBadTasks=[...v.expiredTasks,...v.rejectedTasks];
-    return '<div style="padding:10px 12px;margin-bottom:8px;background:#fff;border-radius:10px;border:1px solid #fee2e2;box-shadow:0 1px 3px rgba(0,0,0,.05)">'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">'+
-        '<div style="display:flex;align-items:center;gap:8px">'+
-          '<span style="font-size:16px;width:28px;text-align:center">'+rank+'</span>'+
-          '<span style="font-size:12.5px;font-weight:800;color:var(--primary)">'+dn+'</span>'+
-        '</div>'+
-        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+
-          (v.expired?'<span style="background:#fef2f2;color:#dc2626;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px">⌛ '+v.expired+' متأخرة</span>':'')+
-          (v.rejected?'<span style="background:#fef2f2;color:#dc2626;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px">✗ '+v.rejected+' مرفوضة</span>':'')+
-          '<span style="font-size:10.5px;color:var(--muted)">/ '+v.total+'</span>'+
-        '</div>'+
-      '</div>'+
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
-        '<div style="flex:1;background:#fef2f2;border-radius:50px;height:10px;overflow:hidden">'+
-          '<div style="background:linear-gradient(90deg,'+col+',#fca5a5);height:100%;width:'+barW+'%;border-radius:50px;transition:width .5s"></div>'+
-        '</div>'+
-        '<span style="font-size:12px;font-weight:800;color:'+col+';min-width:36px">'+pct+'%</span>'+
-      '</div>'+
-      '<div style="display:flex;flex-wrap:wrap;gap:4px">'+
-        allBadTasks.slice(0,4).map(t=>{
-          const isRej=t.status==='rejected';
-          return '<span style="font-size:10px;background:#fef9f9;border:1px solid #fecaca;color:#7f1d1d;padding:2px 8px;border-radius:20px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(isRej?'✗ ':'⌛ ')+(t.title||'').substring(0,28)+'</span>';
-        }).join('')+
-        (allBadTasks.length>4?'<span style="font-size:10px;color:#dc2626;font-weight:600">+'+(allBadTasks.length-4)+' أخرى</span>':'')+
-      '</div>'+
+
+  const maxScore = worstList[0][1].expired + worstList[0][1].rejected;
+  el.innerHTML = worstList.map(([dept,v], i)=>{
+    const score  = v.expired + v.rejected;
+    const pct    = Math.round(score / v.total * 100);
+    const barW   = Math.round(score / maxScore * 100);
+    const dn     = dept.replace('إدارة ','').replace('فريق ','');
+    const rank   = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
+    const col    = pct>=70?'#dc2626':pct>=40?'#ea580c':'#f59e0b';
+    return '<div style="padding:10px 12px;margin-bottom:8px;background:#fff;border-radius:10px;border:1px solid #fee2e2;box-shadow:0 1px 3px rgba(0,0,0,.06)">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-size:16px;width:28px;text-align:center">' + rank + '</span>' +
+          '<span style="font-size:13px;font-weight:800;color:#1a2e1e">' + dn + '</span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          (v.expired ? '<span style="background:#fef2f2;color:#dc2626;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:20px">⌛ ' + v.expired + ' متأخرة</span>' : '') +
+          (v.rejected ? '<span style="background:#fef2f2;color:#dc2626;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:20px">✗ ' + v.rejected + ' مرفوضة</span>' : '') +
+          '<span style="font-size:10.5px;color:#94a3b8">/ ' + v.total + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+        '<div style="flex:1;background:#fef2f2;border-radius:50px;height:10px;overflow:hidden">' +
+          '<div style="background:linear-gradient(90deg,' + col + ',#fca5a5);height:100%;width:' + barW + '%;border-radius:50px"></div>' +
+        '</div>' +
+        '<span style="font-size:12px;font-weight:800;color:' + col + ';min-width:36px">' + pct + '%</span>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:4px">' +
+        v.tasks.slice(0,5).map(t =>
+          '<span style="font-size:10px;background:#fef9f9;border:1px solid #fecaca;color:#7f1d1d;padding:2px 8px;border-radius:20px;white-space:nowrap">' +
+          t.reason + ' ' + (t.title||'').substring(0,25) + '</span>'
+        ).join('') +
+        (v.tasks.length>5 ? '<span style="font-size:10px;color:#dc2626;font-weight:600">+' + (v.tasks.length-5) + '</span>' : '') +
+      '</div>' +
     '</div>';
   }).join('');
 }
+
 
 function renderAdminKpiDashboard(){
   const dlBtn=document.getElementById('btnDownloadReport');
