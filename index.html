@@ -1759,7 +1759,7 @@ function navigate(pg){
   if(pg==='tasks') renderAllCards('all');
   if(pg==='my-tasks') renderMyTasks('all');
   if(pg==='my-kpi') renderMyKpi();
-  if(pg==='dashboard'||pg==='kpi') setTimeout(()=>{renderDashCharts();updateAchBars();updateAnnStats();loadKpiTasks().then(()=>renderWorstDepts('dashWorstDepts',kpiTasks));},80);
+  if(pg==='dashboard'||pg==='kpi') loadKpiTasks().then(()=>{setTimeout(()=>{renderDashCharts();updateAchBars();updateAnnStats();renderWorstDepts('dashWorstDepts',kpiTasks);},80);});
   if(pg==='announcements') renderAnn();
   if(pg==='chat') renderChat();
   if(pg==='kpi-tasks'){loadKpiTasks().then(()=>{renderKpiTasks();updateSideBadges();});}
@@ -3302,32 +3302,40 @@ function updateStats(){
 }
 
 function updateAchBars(){
-  ['achBars','kpiAchBars'].forEach(cid=>{
+  // achBars = مهام عادية (tasks) — kpiAchBars = مهام المؤشرات (kpiTasks)
+  const sources={achBars:tasks, kpiAchBars:kpiTasks};
+  Object.entries(sources).forEach(([cid,srcTasks])=>{
     const el=document.getElementById(cid);if(!el)return;
-    const taskDepts=[...new Set(tasks.map(t=>t.dept).filter(Boolean))];
-    const allDN=[...DEPTS.map(x=>x.name).filter(d=>taskDepts.includes(d)),...taskDepts.filter(d=>!DEPTS.find(x=>x.name===d))];
-    if(!allDN.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">لا توجد بيانات بعد</div>';return;}
-    const todayD=new Date(); todayD.setHours(23,59,59,0);
+    const today=new Date(); today.setHours(0,0,0,0);
+    // كل الإدارات التي لديها مهام في هذا المصدر
+    const taskDepts=[...new Set(srcTasks.map(t=>t.dept).filter(Boolean))];
+    const allDN=[...DEPTS.map(x=>x.name).filter(d=>taskDepts.includes(d)),
+                 ...taskDepts.filter(d=>!DEPTS.find(x=>x.name===d))];
+    if(!allDN.length){
+      el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">لا توجد بيانات بعد</div>';
+      return;
+    }
     el.innerHTML=allDN.map(d=>{
-      const dt=tasks.filter(t=>t.dept===d);
+      const dt=srcTasks.filter(t=>t.dept===d);
       if(!dt.length) return '';
-      const done=dt.filter(t=>['completed','accepted'].includes(t.status)).length;
-      const rej=dt.filter(t=>t.status==='rejected').length;
-      const upcoming=dt.filter(t=>!['completed','accepted'].includes(t.status)&&(!t.endDate||new Date(t.endDate)>=todayD));
-      const today_w=new Date(); today_w.setHours(0,0,0,0);
-      const overdue=dt.filter(t=>t.endDate&&new Date(t.endDate+'T00:00:00')<today_w&&!['completed','accepted'].includes(t.status)).length;
+      const done  =dt.filter(t=>['completed','accepted'].includes(t.status)).length;
+      const rej   =dt.filter(t=>t.status==='rejected').length;
+      const overdue=dt.filter(t=>t.endDate&&new Date(t.endDate+'T00:00:00')<today&&!['completed','accepted'].includes(t.status)).length;
+      const upcoming=dt.filter(t=>!['completed','accepted'].includes(t.status)&&(!t.endDate||new Date(t.endDate+'T00:00:00')>=today)).length;
       const dueBase=done+overdue;
-      const curPct=dueBase?Math.round(done/dueBase*100):(dt.length?0:100);
-      const totPct=dt.length?Math.round(done/dt.length*100):0;
+      const curPct =dueBase?Math.round(done/dueBase*100):(dt.length?0:100);
+      const totPct =dt.length?Math.round(done/dt.length*100):0;
       const curC=curPct>=70?'#16a34a':curPct>=40?'#f59e0b':'#ef4444';
       const totC=totPct>=70?'#16a34a':totPct>=40?'#f59e0b':'#ef4444';
       const sn=d.replace('إدارة ','').replace('فريق ','');
+      const overdueLabel=overdue?'<span style="color:#ef4444;font-weight:700"> ⌛'+overdue+' متأخرة</span>':'';
+      const upcomingLabel=upcoming?'<span style="color:#3b82f6"> ⏳'+upcoming+'</span>':'';
       return '<div style="background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-right:3px solid '+curC+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
           '<span style="font-size:12px;font-weight:800;color:var(--primary)">'+sn+'</span>'+
           '<span style="font-size:10.5px;color:var(--muted)">'+
             '<span style="color:#16a34a;font-weight:700">✓'+done+'</span>'+
-            (upcoming.length?' <span style="color:#3b82f6">⏳'+upcoming.length+'</span>':'')+
+            upcomingLabel+overdueLabel+
             (rej?' <span style="color:#ef4444">✗'+rej+'</span>':'')+
             ' / '+dt.length+
           '</span>'+
@@ -3336,8 +3344,8 @@ function updateAchBars(){
           '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">'+
             '<span>📅 إنجاز الحالي</span>'+
             '<span style="font-weight:700;color:'+curC+'">'+curPct+'%'+
-            (overdue===0&&done===0?' <small style="color:#3b82f6">('+upcoming+' قيد التنفيذ)</small>':
-             ' <small>('+done+' منجزة'+(overdue?' / '+overdue+' متأخرة':'')+')</small>')+'</span>'+
+            (dueBase===0?' <small style="color:#3b82f6">('+upcoming+' قيد التنفيذ)</small>':
+             ' <small>('+done+'✓'+(overdue?' '+overdue+'⌛':'')+')</small>')+'</span>'+
           '</div>'+
           '<div style="background:#f1f5f9;border-radius:50px;height:7px;overflow:hidden">'+
             '<div style="background:'+curC+';height:100%;width:'+curPct+'%;border-radius:50px"></div>'+
@@ -3346,7 +3354,7 @@ function updateAchBars(){
         '<div>'+
           '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">'+
             '<span>📊 الإجمالي</span>'+
-            '<span style="font-weight:700;color:'+totC+'">'+totPct+'%'+(upcoming.length?' — يتبقى '+upcoming.length:'')+'</span>'+
+            '<span style="font-weight:700;color:'+totC+'">'+totPct+'%'+(upcoming?' — يتبقى '+upcoming:'')+'</span>'+
           '</div>'+
           '<div style="background:#f1f5f9;border-radius:50px;height:5px;overflow:hidden">'+
             '<div style="background:'+totC+';height:100%;width:'+totPct+'%;border-radius:50px;opacity:.75"></div>'+
