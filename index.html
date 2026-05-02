@@ -3556,8 +3556,39 @@ function downloadKpiReport(){
   });
   sortedKpiForReport.forEach(function(t,i){kpiRows+=kRow(t,i);});
 
-  // حساب الإدارات الأسوأ للتقرير (متأخرة + مرفوضة)
+  // حساب الإدارات الأسوأ — مهام عادية
   var todayWR=new Date(); todayWR.setHours(0,0,0,0);
+  var worstMapT={};
+  tasks.forEach(function(t){
+    if(!t.dept)return;
+    if(!worstMapT[t.dept])worstMapT[t.dept]={expired:0,rejected:0,total:0,names:[]};
+    worstMapT[t.dept].total++;
+    var d=t.end?new Date(t.end+'T00:00:00'):null;
+    var isExp=d&&d<todayWR;
+    var isNotDone=!['accepted','completed'].includes(t.status);
+    var isRej=t.status==='rejected';
+    if(isExp&&isNotDone){worstMapT[t.dept].expired++;worstMapT[t.dept].names.push('⌛ '+(t.title||''));}
+    else if(isRej){worstMapT[t.dept].rejected++;worstMapT[t.dept].names.push('✗ '+(t.title||''));}
+  });
+  var worstArrT=Object.entries(worstMapT).filter(function(e){return e[1].expired>0||e[1].rejected>0;})
+    .sort(function(a,b){return (b[1].expired+b[1].rejected)-(a[1].expired+a[1].rejected);});
+  var worstRowsT=worstArrT.map(function(e,i){
+    var d=e[0],v=e[1];
+    var score=v.expired+v.rejected;
+    var pct=Math.round(score/v.total*100);
+    var rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
+    var col=pct>=70?'#dc2626':pct>=40?'#ea580c':'#f59e0b';
+    return '<tr style="background:'+(i%2===0?'#fff5f5':'#fff')+'"><td>'+rank+'</td>'
+      +'<td style="text-align:right;font-weight:700">'+d+'</td>'
+      +'<td>'+v.total+'</td>'
+      +'<td style="color:#dc2626;font-weight:800">'+v.expired+'</td>'
+      +'<td style="color:#dc2626;font-weight:800">'+v.rejected+'</td>'
+      +'<td style="color:'+col+';font-weight:800">'+pct+'%</td>'
+      +'<td style="text-align:right;font-size:10px;color:#64748b">'+v.names.slice(0,2).join(' • ')+(v.names.length>2?' (+'+( v.names.length-2)+')':'')+'</td>'
+      +'</tr>';
+  }).join('');
+
+  // حساب الإدارات الأسوأ — مهام الدليل
   var worstMap={};
   kpiTasks.forEach(function(t){
     if(!t.dept)return;
@@ -3675,9 +3706,14 @@ function downloadKpiReport(){
     +'<div class="sec">📋 تفاصيل مهام مؤشرات الدليل</div>'
     +'<table><thead><tr><th>#</th><th style="text-align:right;width:35%">عنوان المؤشر</th><th style="text-align:right">الإدارة</th><th>المعيار</th><th>الانتهاء</th><th>الحالة</th></tr></thead><tbody>'+kpiRows+'</tbody></table>'
     +'</div>'
-        +(worstArr.length?'<div style="page-break-before:always;padding-top:20px"></div>'
-      +'<div class="sec">🚨 الإدارات الأسوأ أداءً — مهام انتهت ولم تُسلَّم</div>'
-      +'<div style="font-size:11px;color:#64748b;background:#fff5f5;border-radius:8px;padding:8px 12px;margin-bottom:12px;border-right:4px solid #dc2626">هذه الإدارات لديها مهام انتهى موعدها دون أي تسليم — مرتبة من الأسوأ إلى الأفضل</div>'
+        +(worstArrT.length?'<div style="page-break-before:always;padding-top:20px"></div>'
+      +'<div class="sec">🚨 الإدارات الأسوأ أداءً — المهام العادية</div>'
+      +'<div style="font-size:11px;color:#64748b;background:#fff5f5;border-radius:8px;padding:8px 12px;margin-bottom:12px;border-right:4px solid #dc2626">مرتبة من الأسوأ إلى الأفضل بناءً على المهام المتأخرة والمرفوضة</div>'
+      +'<table><thead><tr><th>#</th><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>المتأخرة</th><th>المرفوضة</th><th>نسبة التأخر</th><th style="text-align:right">أبرز المهام</th></tr></thead><tbody>'+worstRowsT+'</tbody></table>'
+      :'')
+        +(worstArr.length?'<div style="margin-top:16px"></div>'
+      +'<div class="sec">🚨 الإدارات الأسوأ أداءً — مهام الدليل</div>'
+      +'<div style="font-size:11px;color:#64748b;background:#fff5f5;border-radius:8px;padding:8px 12px;margin-bottom:12px;border-right:4px solid #dc2626">مرتبة من الأسوأ إلى الأفضل بناءً على مؤشرات الدليل المتأخرة والمرفوضة</div>'
       +'<table><thead><tr><th>#</th><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>المتأخرة</th><th>المرفوضة</th><th>نسبة التأخر</th><th style="text-align:right">أبرز المهام</th></tr></thead><tbody>'+worstRows+'</tbody></table>'
       :'')
     +'<div class="foot"><b style="color:#AE9674">منصة قاصد</b><div>منصة قاصد لإدارة المهام</div><div>'+todayH+'</div></div>';
