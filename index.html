@@ -731,9 +731,13 @@ body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);dire
           <div class="dcard-title"><i class="fas fa-tasks"></i> نسب الإنجاز التفصيلية</div>
           <div id="achBars"></div>
         </div>
-        <div class="dcard" style="margin-bottom:20px">
-          <div class="dcard-title"><i class="fas fa-exclamation-triangle" style="color:#dc2626"></i> الإدارات الأسوأ أداءً — مهام انتهت ولم تُقبل</div>
+        <div class="dcard" style="margin-bottom:16px">
+          <div class="dcard-title"><i class="fas fa-exclamation-triangle" style="color:#dc2626"></i> الإدارات الأسوأ أداءً — المهام العادية</div>
           <div id="dashWorstDepts"></div>
+        </div>
+        <div class="dcard" style="margin-bottom:20px">
+          <div class="dcard-title"><i class="fas fa-exclamation-triangle" style="color:#be123c"></i> الإدارات الأسوأ أداءً — مهام الدليل</div>
+          <div id="dashWorstKpi"></div>
         </div>
         <div class="dash-row">
           <div class="dcard">
@@ -1759,7 +1763,7 @@ function navigate(pg){
   if(pg==='tasks') renderAllCards('all');
   if(pg==='my-tasks') renderMyTasks('all');
   if(pg==='my-kpi') renderMyKpi();
-  if(pg==='dashboard'||pg==='kpi') loadKpiTasks().then(()=>{setTimeout(()=>{renderDashCharts();updateAchBars();updateAnnStats();renderWorstDepts('dashWorstDepts',kpiTasks,'endDate');},80);});
+  if(pg==='dashboard'||pg==='kpi') loadKpiTasks().then(()=>{setTimeout(()=>{renderDashCharts();updateAchBars();updateAnnStats();renderWorstDepts('dashWorstDepts',tasks,'end');renderWorstDepts('dashWorstKpi',kpiTasks,'endDate');},80);});
   if(pg==='announcements') renderAnn();
   if(pg==='chat') renderChat();
   if(pg==='kpi-tasks'){loadKpiTasks().then(()=>{renderKpiTasks();updateSideBadges();});}
