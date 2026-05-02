@@ -3672,6 +3672,10 @@ function downloadKpiReport(){
     +'<div class="cbox"><div class="ct">أداء الإدارات — المهام العادية</div>'
     +'<table><thead><tr><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>مكتملة</th><th>مراجعة</th><th>مرفوضة</th><th>متبقية</th><th style="width:180px">نسبة الإنجاز (حالي / كلي)</th></tr></thead><tbody>'+dSRows+'</tbody></table></div>'
     +'<div style="font-size:10px;color:#64748b;padding:6px 10px;background:#f8fafc;border-radius:6px;margin-top:-10px;margin-bottom:14px">* نسبة الإنجاز الحالي = 100% تعني أنه لا توجد مهام انتهى موعدها بعد. المهام المتبقية لم يحن موعدها.</div>'
+    +(worstArrT.length?'<div class="sec" style="margin-top:18px">🚨 الإدارات الأسوأ أداءً — المهام العادية</div>'
+      +'<div style="font-size:11px;color:#64748b;background:#fff5f5;border-radius:8px;padding:8px 12px;margin-bottom:12px;border-right:4px solid #dc2626">مرتبة من الأسوأ إلى الأفضل — المهام المتأخرة والمرفوضة</div>'
+      +'<table><thead><tr><th>#</th><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>المتأخرة</th><th>المرفوضة</th><th>نسبة التأخر</th><th style="text-align:right">أبرز المهام</th></tr></thead><tbody>'+worstRowsT+'</tbody></table>'
+      :'')
     +'<div style="page-break-before:always;padding-top:20px"></div>'
     +'<div class="sec">📊 مؤشرات الدليل — حج عام 1447</div>'
     +'<div class="cards">'
@@ -3706,11 +3710,6 @@ function downloadKpiReport(){
     +'<div class="sec">📋 تفاصيل مهام مؤشرات الدليل</div>'
     +'<table><thead><tr><th>#</th><th style="text-align:right;width:35%">عنوان المؤشر</th><th style="text-align:right">الإدارة</th><th>المعيار</th><th>الانتهاء</th><th>الحالة</th></tr></thead><tbody>'+kpiRows+'</tbody></table>'
     +'</div>'
-        +(worstArrT.length?'<div style="page-break-before:always;padding-top:20px"></div>'
-      +'<div class="sec">🚨 الإدارات الأسوأ أداءً — المهام العادية</div>'
-      +'<div style="font-size:11px;color:#64748b;background:#fff5f5;border-radius:8px;padding:8px 12px;margin-bottom:12px;border-right:4px solid #dc2626">مرتبة من الأسوأ إلى الأفضل بناءً على المهام المتأخرة والمرفوضة</div>'
-      +'<table><thead><tr><th>#</th><th style="text-align:right">الإدارة</th><th>الإجمالي</th><th>المتأخرة</th><th>المرفوضة</th><th>نسبة التأخر</th><th style="text-align:right">أبرز المهام</th></tr></thead><tbody>'+worstRowsT+'</tbody></table>'
-      :'')
         +(worstArr.length?'<div style="margin-top:16px"></div>'
       +'<div class="sec">🚨 الإدارات الأسوأ أداءً — مهام الدليل</div>'
       +'<div style="font-size:11px;color:#64748b;background:#fff5f5;border-radius:8px;padding:8px 12px;margin-bottom:12px;border-right:4px solid #dc2626">مرتبة من الأسوأ إلى الأفضل بناءً على مؤشرات الدليل المتأخرة والمرفوضة</div>'
